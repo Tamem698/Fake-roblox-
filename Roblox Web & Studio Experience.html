@@ -1,0 +1,2555 @@
+<!DOCTYPE html>
+<html lang="ar" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Roblox Web & Studio</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js for 3D Game & Studio Engine -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Tone.js for realistic Roblox UI & in-game sounds -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <!-- Google Fonts: Gotham / Inter & Arabic font support -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            roblox: {
+              red: '#00a2ff',
+              brandRed: '#e2231a',
+              dark: '#191b1d',
+              card: '#ffffff',
+              sidebar: '#f7f9fa',
+              green: '#00a651',
+              accent: '#3977fc',
+              subtext: '#656b73'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'Tajawal', 'sans-serif'],
+            display: ['Fredoka', 'Inter', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', 'Tajawal', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      background-color: #f7f9fc;
+      overflow-x: hidden;
+    }
+
+    /* Sunburst header background matching user screenshots */
+    .roblox-sunburst {
+      background: radial-gradient(circle at 50% 0%, #bde3fe 0%, #d8efff 35%, #ebf6ff 65%, #f7f9fc 100%);
+      position: relative;
+    }
+    .roblox-sunburst::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 280px;
+      background: repeating-conic-gradient(
+        from 0deg at 50% -10%,
+        rgba(255, 255, 255, 0.45) 0deg 8deg,
+        transparent 8deg 16deg
+      );
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cfd8dc;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #90a4ae;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col bg-[#f7f9fc]">
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Auth & Login Overlay Screen -->
+  <div id="authOverlay" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-md transition-all duration-300">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-8 m-4 relative overflow-hidden border border-slate-100">
+      
+      <!-- Decorative background accent glow -->
+      <div class="absolute -top-24 -right-24 w-48 h-48 bg-sky-200 rounded-full blur-3xl opacity-60"></div>
+      <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-rose-200 rounded-full blur-3xl opacity-60"></div>
+
+      <!-- Quick Bypass Button -->
+      <button type="button" onclick="loginQuickGuest()" class="absolute top-4 right-4 text-xs font-bold text-slate-400 hover:text-sky-600 transition flex items-center gap-1 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full">
+        <span>تخطي ودخول سريع</span>
+        <span>➔</span>
+      </button>
+
+      <!-- Roblox Header Logo -->
+      <div class="text-center mb-6 relative mt-2">
+        <div class="flex items-center justify-center gap-1 font-black text-3xl md:text-4xl tracking-tighter text-slate-900">
+          <span>R</span>
+          <span class="w-6 h-6 border-[5px] border-slate-900 inline-block transform -rotate-12 bg-white m-0.5 shadow-sm"></span>
+          <span>BLOX</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-2 font-medium">سجّل دخولك الآن واستمتع بأكثر من 20 لعبة وعالم افتراضي</p>
+      </div>
+
+      <!-- Auth Switch Tabs -->
+      <div class="flex bg-slate-100 p-1 rounded-2xl mb-5 font-semibold text-xs sm:text-sm">
+        <button id="tabLoginBtn" type="button" class="flex-1 py-2.5 rounded-xl bg-white text-slate-900 shadow-sm transition-all" onclick="switchAuthTab('login')">تسجيل الدخول (Log In)</button>
+        <button id="tabRegisterBtn" type="button" class="flex-1 py-2.5 rounded-xl text-slate-500 hover:text-slate-700 transition-all" onclick="switchAuthTab('register')">إنشاء حساب (Sign Up)</button>
+      </div>
+
+      <!-- Form Error Alert Box (Hidden by default) -->
+      <div id="authErrorMsg" class="hidden mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-600 text-xs font-semibold flex items-center gap-2">
+        <span>⚠️</span>
+        <span id="authErrorText">يرجى كتابة اسم المستخدم وكلمة المرور</span>
+      </div>
+
+      <!-- Login Form View -->
+      <div id="loginFormContainer" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1 tracking-wider">اسم المستخدم / Username</label>
+          <div class="relative">
+            <input type="text" id="authUsername" value="Salman123" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all font-semibold" placeholder="أدخل اسمك مثلاً Salman123" onkeydown="handleInputEnter(event)">
+            <span class="absolute right-3.5 top-3.5 text-slate-400 text-sm">👤</span>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1 tracking-wider">كلمة المرور / Password</label>
+          <div class="relative">
+            <input type="password" id="authPassword" value="password123" class="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all font-semibold" placeholder="أدخل كلمة المرور" onkeydown="handleInputEnter(event)">
+            <span class="absolute right-3.5 top-3.5 text-slate-400 text-sm">🔒</span>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-xs text-slate-500">
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="checkbox" id="authRememberMe" checked class="rounded text-sky-600 focus:ring-sky-400">
+            <span>تذكرني على هذا الجهاز</span>
+          </label>
+          <button type="button" class="hover:underline text-sky-600 font-semibold" onclick="showToast('تم إرسال رابط استعادة الرمز إلى بريدك')">نسيت كلمة السر؟</button>
+        </div>
+
+        <button type="button" id="submitLoginBtn" onclick="handleAuthSubmit(event)" class="w-full py-3.5 px-4 bg-[#00a2ff] hover:bg-[#008fe0] active:scale-[0.98] text-white font-bold rounded-xl shadow-lg shadow-sky-500/25 transition-all text-sm flex items-center justify-center gap-2 cursor-pointer">
+          <span>دخول إلى روبلوكس (Log In)</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </button>
+
+        <button type="button" onclick="loginQuickGuest()" class="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 active:scale-[0.98] text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-1.5">
+          <span>⚡ دخول سريع مباشر (حساب Salman123)</span>
+        </button>
+      </div>
+
+      <!-- Register Form View (Hidden by default) -->
+      <div id="registerFormContainer" class="space-y-3.5 hidden">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">تاريخ الميلاد / Birthday</label>
+          <div class="grid grid-cols-3 gap-1.5">
+            <select class="px-2 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold">
+              <option>15</option><option>20</option><option>25</option>
+            </select>
+            <select class="px-2 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold">
+              <option>يناير</option><option selected>يونيو</option><option>أغسطس</option>
+            </select>
+            <select class="px-2 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold">
+              <option>2014</option><option>2012</option><option selected>2010</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">اسم المستخدم الجديد</label>
+          <input type="text" id="regUsername" placeholder="مثال: PlayerPro2026" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">اختر كلمة مرور قوية</label>
+          <input type="password" id="regPassword" placeholder="8 أحرف أو أرقام على الأقل" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">نوع الشخصية (اختياري)</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" class="py-2 rounded-xl border border-slate-200 hover:border-sky-500 hover:bg-sky-50 text-xs font-bold text-slate-700">👦 ولد</button>
+            <button type="button" class="py-2 rounded-xl border border-slate-200 hover:border-pink-500 hover:bg-pink-50 text-xs font-bold text-slate-700">👧 بنت</button>
+          </div>
+        </div>
+
+        <button type="button" onclick="handleRegisterSubmit()" class="w-full py-3 bg-[#00a651] hover:bg-[#008f45] active:scale-[0.98] text-white font-bold rounded-xl shadow-lg shadow-emerald-500/25 transition text-xs mt-2">
+          إنشاء حساب والبدء باللعب فوراً
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="mainApp" class="flex-1 flex w-full relative min-h-screen">
+    
+    <!-- Left Sidebar (Roblox Mobile/Tablet App Style) -->
+    <aside class="w-16 md:w-20 bg-white border-r border-slate-200/80 flex flex-col items-center py-4 z-30 shrink-0 sticky top-0 h-screen select-none">
+      <!-- App Brand Logo Small -->
+      <button onclick="navigateTo('home')" class="p-2 mb-6 hover:scale-105 transition active:scale-95 group" title="Roblox Home">
+        <div class="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center shadow-md shadow-red-500/30">
+          <div class="w-3.5 h-3.5 border-[2.5px] border-white transform -rotate-12 bg-red-600"></div>
+        </div>
+      </button>
+
+      <!-- Nav Items -->
+      <nav class="flex flex-col gap-4 items-center w-full px-2">
+        <button onclick="navigateTo('home')" id="nav-home" class="nav-btn w-full flex flex-col items-center justify-center py-2.5 rounded-2xl text-sky-600 bg-sky-50 font-semibold text-[11px] transition">
+          <svg class="w-6 h-6 mb-1" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          <span>Home</span>
+        </button>
+
+        <button onclick="navigateTo('charts')" id="nav-charts" class="nav-btn w-full flex flex-col items-center justify-center py-2.5 rounded-2xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 font-semibold text-[11px] transition">
+          <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          <span>Charts</span>
+        </button>
+
+        <button onclick="navigateTo('shop')" id="nav-shop" class="nav-btn w-full flex flex-col items-center justify-center py-2.5 rounded-2xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 font-semibold text-[11px] transition">
+          <div class="relative w-6 h-6 flex items-center justify-center mb-1">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+            <span class="absolute -top-1 -right-1 bg-emerald-500 text-white text-[9px] font-black px-1 rounded-full">R$</span>
+          </div>
+          <span>Shop</span>
+        </button>
+
+        <button onclick="navigateTo('avatar')" id="nav-avatar" class="nav-btn w-full flex flex-col items-center justify-center py-2.5 rounded-2xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 font-semibold text-[11px] transition">
+          <div class="w-6 h-6 rounded-full bg-amber-200 border border-slate-300 flex items-center justify-center mb-1 overflow-hidden">
+            <span class="text-xs">🧒</span>
+          </div>
+          <span>Avatar</span>
+        </button>
+
+        <button onclick="openRobuxModal()" id="nav-robux" class="nav-btn w-full flex flex-col items-center justify-center py-2.5 rounded-2xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 font-semibold text-[11px] transition">
+          <div class="w-6 h-6 flex items-center justify-center mb-1">
+            <svg class="w-5 h-5 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 21 8.5 21 15.5 12 22 3 15.5 3 8.5 12 2"/><circle cx="12" cy="12" r="2.5"/></svg>
+          </div>
+          <span>Robux</span>
+        </button>
+
+        <button onclick="navigateTo('studio')" id="nav-studio" class="nav-btn w-full flex flex-col items-center justify-center py-2.5 rounded-2xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 font-semibold text-[11px] transition group">
+          <div class="relative w-6 h-6 flex items-center justify-center mb-1">
+            <svg class="w-5 h-5 text-indigo-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <span class="absolute -top-1 -right-1 flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-600"></span>
+            </span>
+          </div>
+          <span class="text-indigo-600 font-bold">Studio</span>
+        </button>
+
+        <button onclick="navigateTo('chat')" id="nav-chat" class="nav-btn w-full flex flex-col items-center justify-center py-2.5 rounded-2xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 font-semibold text-[11px] transition">
+          <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+          <span>Chat</span>
+        </button>
+
+        <button onclick="navigateTo('more')" id="nav-more" class="nav-btn w-full flex flex-col items-center justify-center py-2.5 rounded-2xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 font-semibold text-[11px] transition">
+          <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"/></svg>
+          <span>More</span>
+        </button>
+      </nav>
+
+      <div class="mt-auto flex flex-col items-center gap-2">
+        <button onclick="logout()" class="p-2 text-slate-400 hover:text-rose-500 transition rounded-xl hover:bg-rose-50" title="خروج">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <div class="flex-1 flex flex-col min-w-0">
+      
+      <!-- Top Navigation Header (with Sunburst background accent) -->
+      <header class="roblox-sunburst sticky top-0 z-20 px-4 md:px-8 pt-4 pb-3 flex items-center justify-between gap-3 border-b border-sky-100/60 transition-all">
+        <!-- Brand Logo & Select Badge (matching user screenshot 1 & 5) -->
+        <div class="flex items-center gap-3 shrink-0">
+          <div class="flex items-center">
+            <span class="text-2xl md:text-3xl font-black text-rose-500 tracking-tight font-display">ROBL</span>
+            <span class="w-4 h-4 md:w-5 md:h-5 border-[3.5px] border-rose-500 transform -rotate-12 bg-white mx-0.5 inline-block shadow-sm"></span>
+            <span class="text-2xl md:text-3xl font-black text-rose-500 tracking-tight font-display">X</span>
+          </div>
+          <span class="bg-black text-white text-[10px] md:text-xs font-black px-2 py-0.5 rounded uppercase tracking-wider">SELECT</span>
+        </div>
+
+        <!-- Center Search Bar (matching screenshot pill shape) -->
+        <div class="flex-1 max-w-xl mx-2">
+          <div class="relative flex items-center">
+            <svg class="w-4 h-4 absolute left-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input type="text" id="gameSearchInput" oninput="filterGames(this.value)" placeholder="Search" class="w-full pl-10 pr-4 py-2 bg-white/80 hover:bg-white focus:bg-white rounded-full border border-slate-300/80 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-400/50 shadow-sm transition">
+          </div>
+        </div>
+
+        <!-- Top Right Actions: Robux, Settings, Notifications (matches screenshot 1) -->
+        <div class="flex items-center gap-2 md:gap-3 shrink-0">
+          
+          <!-- Robux Balance Pill -->
+          <button onclick="openRobuxModal()" class="flex items-center gap-1.5 bg-white/90 hover:bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm hover:shadow transition group" title="شراء وشحن Robux">
+            <!-- Robux Hexagon Icon -->
+            <div class="w-4 h-4 text-slate-800 group-hover:text-emerald-600 transition">
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 21 8.5 21 15.5 12 22 3 15.5 3 8.5 12 2"/><circle cx="12" cy="12" r="2.5" fill="white"/></svg>
+            </div>
+            <span id="robuxDisplay" class="font-extrabold text-xs text-slate-800 group-hover:text-emerald-600">1,450</span>
+          </button>
+
+          <!-- Studio Quick Switch -->
+          <button onclick="navigateTo('studio')" class="hidden sm:flex items-center gap-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-sm transition">
+            <span>Studio</span>
+            <span class="text-[10px] bg-indigo-800 px-1.5 py-0.5 rounded">صنع ألعاب</span>
+          </button>
+
+          <!-- Settings Gear -->
+          <button onclick="showToast('إعدادات الحساب')" class="w-8 h-8 rounded-full bg-white/80 hover:bg-white flex items-center justify-center border border-slate-200 text-slate-600 shadow-sm transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+
+          <!-- Notification Bell with '65' Badge -->
+          <div class="relative">
+            <button onclick="showToast('لديك 65 إشعار جديد في روبلوكس')" class="w-8 h-8 rounded-full bg-white/80 hover:bg-white flex items-center justify-center border border-slate-200 text-slate-600 shadow-sm transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            </button>
+            <span class="absolute -top-1 -right-1 bg-sky-600 text-white text-[10px] font-black px-1.5 py-0.2 rounded-full shadow-sm">65</span>
+          </div>
+
+        </div>
+      </header>
+
+      <main id="view-home" class="view-content flex-1 px-4 md:px-8 py-4 overflow-y-auto">
+        
+        <!-- User Profile Bar (Matches Screenshot 1: Avatar icon + Salman123) -->
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-12 h-12 rounded-full bg-slate-200 border-2 border-white shadow overflow-hidden flex items-center justify-center relative cursor-pointer" onclick="navigateTo('avatar')">
+            <svg class="w-10 h-10 text-slate-600 translate-y-1.5" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="7" r="4"/>
+              <path d="M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/>
+            </svg>
+            <div class="absolute bottom-0 inset-x-0 bg-emerald-500 h-1"></div>
+          </div>
+          <div>
+            <h1 id="userGreeting" class="text-xl md:text-2xl font-black text-slate-800 tracking-tight">Salman123</h1>
+            <p class="text-xs text-slate-500 flex items-center gap-1.5 font-medium">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              Online • متصل الآن
+            </p>
+          </div>
+        </div>
+
+        <!-- Friends Section (Matches Screenshot 1 with 216 friends and list) -->
+        <div class="mb-8">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-base font-extrabold text-slate-800 flex items-center gap-1.5">
+              <span>Friends</span>
+              <span class="text-slate-400 font-normal text-sm">(216)</span>
+              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </h2>
+          </div>
+
+          <!-- Friends Horizontal Carousel -->
+          <div class="flex items-start gap-4 overflow-x-auto pb-3 pt-1 no-scrollbar" id="friendsCarousel">
+            
+            <!-- Add Friends Item (matching screenshot 1) -->
+            <div class="flex flex-col items-center min-w-[70px] text-center cursor-pointer group" onclick="showToast('تم فتح قائمة إضافة الأصدقاء')">
+              <div class="relative w-16 h-16 rounded-full bg-slate-200/80 group-hover:bg-slate-300 flex items-center justify-center transition border border-slate-300/50 shadow-inner">
+                <svg class="w-7 h-7 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                </svg>
+                <span class="absolute top-0 right-0 w-4 h-4 bg-sky-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow">1</span>
+              </div>
+              <span class="text-xs font-semibold text-slate-700 mt-2 truncate w-full">Add Friends</span>
+            </div>
+
+            <!-- Friend 1: CR7MS093 -->
+            <div class="flex flex-col items-center min-w-[76px] text-center cursor-pointer group" onclick="showToast('CR7MS093 يلعب الآن Steal An Egg')">
+              <div class="relative w-16 h-16 rounded-full bg-amber-100 border-2 border-slate-200 group-hover:border-sky-500 overflow-hidden shadow transition">
+                <div class="w-full h-full flex items-center justify-center text-3xl">🧑🏻‍🦰</div>
+                <span class="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+              </div>
+              <span class="text-[11px] font-bold text-slate-800 mt-1 truncate w-20">CR7MS093</span>
+              <span class="text-[10px] text-slate-500 truncate w-20">Steal An Egg</span>
+            </div>
+
+            <!-- Friend 2: tamem5511 -->
+            <div class="flex flex-col items-center min-w-[76px] text-center cursor-pointer group" onclick="showToast('tamem5511 متصل')">
+              <div class="relative w-16 h-16 rounded-full bg-slate-200 border-2 border-slate-200 group-hover:border-sky-500 overflow-hidden shadow transition">
+                <div class="w-full h-full flex items-center justify-center text-3xl">🧔🏻</div>
+              </div>
+              <span class="text-[11px] font-bold text-slate-800 mt-1 truncate w-20">tamem5511</span>
+            </div>
+
+            <!-- Friend 3: altp70 -->
+            <div class="flex flex-col items-center min-w-[76px] text-center cursor-pointer group" onclick="showToast('altp70 متصل')">
+              <div class="relative w-16 h-16 rounded-full bg-emerald-100 border-2 border-slate-200 group-hover:border-sky-500 overflow-hidden shadow transition">
+                <div class="w-full h-full flex items-center justify-center text-3xl">👩🏻‍🦳</div>
+              </div>
+              <span class="text-[11px] font-bold text-slate-800 mt-1 truncate w-20">altp70</span>
+            </div>
+
+            <!-- Friend 4: guests -->
+            <div class="flex flex-col items-center min-w-[76px] text-center cursor-pointer group" onclick="showToast('guests في اللعبة')">
+              <div class="relative w-16 h-16 rounded-full bg-rose-100 border-2 border-slate-200 group-hover:border-sky-500 overflow-hidden shadow transition">
+                <div class="w-full h-full flex items-center justify-center text-3xl">🧢</div>
+              </div>
+              <span class="text-[11px] font-bold text-slate-800 mt-1 truncate w-20">guests</span>
+            </div>
+
+            <!-- Friend 5: ctytf6fu -->
+            <div class="flex flex-col items-center min-w-[76px] text-center cursor-pointer group">
+              <div class="relative w-16 h-16 rounded-full bg-blue-100 border-2 border-slate-200 group-hover:border-sky-500 overflow-hidden shadow transition">
+                <div class="w-full h-full flex items-center justify-center text-3xl">🤖</div>
+              </div>
+              <span class="text-[11px] font-bold text-slate-800 mt-1 truncate w-20">ctytf6fu</span>
+            </div>
+
+            <!-- Friend 6: Carp124_EZ -->
+            <div class="flex flex-col items-center min-w-[76px] text-center cursor-pointer group">
+              <div class="relative w-16 h-16 rounded-full bg-orange-100 border-2 border-slate-200 group-hover:border-sky-500 overflow-hidden shadow transition">
+                <div class="w-full h-full flex items-center justify-center text-3xl">😎</div>
+              </div>
+              <span class="text-[11px] font-bold text-slate-800 mt-1 truncate w-20">Carp124_EZ</span>
+            </div>
+
+            <!-- Friend 7: qwerty_352539 -->
+            <div class="flex flex-col items-center min-w-[76px] text-center cursor-pointer group">
+              <div class="relative w-16 h-16 rounded-full bg-purple-100 border-2 border-slate-200 group-hover:border-sky-500 overflow-hidden shadow transition">
+                <div class="w-full h-full flex items-center justify-center text-3xl">👾</div>
+              </div>
+              <span class="text-[11px] font-bold text-slate-800 mt-1 truncate w-20">qwerty_352539</span>
+            </div>
+
+            <!-- Friend 8: yevieb64779 -->
+            <div class="flex flex-col items-center min-w-[76px] text-center cursor-pointer group">
+              <div class="relative w-16 h-16 rounded-full bg-teal-100 border-2 border-slate-200 group-hover:border-sky-500 overflow-hidden shadow transition">
+                <div class="w-full h-full flex items-center justify-center text-3xl">👧🏽</div>
+              </div>
+              <span class="text-[11px] font-bold text-slate-800 mt-1 truncate w-20">yevieb64779</span>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Recommended Games Section (Screenshot 1: 3 cards across) -->
+        <section class="mb-8">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">Recommended For You</h2>
+            <button onclick="showToast('عرض المزيد من الألعاب الموصى بها')" class="text-xs font-bold text-sky-600 hover:text-sky-700 flex items-center gap-1">
+              <span>See All</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" id="recommendedGamesGrid">
+            <!-- Populated via JavaScript -->
+          </div>
+        </section>
+
+        <!-- Standout Games Section (Screenshot 5 banner cards) -->
+        <section class="mb-8">
+          <div class="flex items-center justify-between mb-1">
+            <h2 class="text-lg font-black text-slate-900 tracking-tight">Standout Games</h2>
+          </div>
+          <p class="text-xs text-slate-500 mb-4 font-medium">Curated games shaping what's next for Roblox</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-5" id="standoutGamesGrid">
+            <!-- Populated via JavaScript -->
+          </div>
+        </section>
+
+        <!-- All Games Grid (Over 20 games matching screenshots) -->
+        <section class="mb-12">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-lg font-black text-slate-900 tracking-tight">Popular & Trending (20+ Games)</h2>
+              <p class="text-xs text-slate-500 font-medium">أفضل الألعاب وأكثرها نشاطاً اليوم في روبلوكس</p>
+            </div>
+            <span class="text-xs font-bold px-3 py-1 bg-slate-200/80 rounded-full text-slate-700" id="totalGamesBadge">20+ لعبة متوفرة</span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-4" id="allGamesGrid">
+            <!-- Populated via JavaScript -->
+          </div>
+        </section>
+
+      </main>
+
+      <!-- Roblox Studio View -->
+      <section id="view-studio" class="view-content hidden flex-1 flex flex-col bg-slate-900 text-white min-h-0 overflow-hidden">
+        <!-- Studio Top Toolbar -->
+        <div class="bg-slate-800 border-b border-slate-700 px-4 py-2.5 flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1.5 font-black text-indigo-400 text-lg">
+              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+              <span>Roblox Studio</span>
+            </div>
+            <span class="text-xs bg-indigo-500/20 text-indigo-300 font-semibold px-2 py-0.5 rounded border border-indigo-500/40">صانع الألعاب الافتراضية</span>
+          </div>
+
+          <!-- Studio Actions: Parts, Test, Publish -->
+          <div class="flex items-center gap-2">
+            <button onclick="studioAddPart('block')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs font-bold rounded-lg transition flex items-center gap-1.5" title="إضافة مجسم مكعب">
+              <span>+ Block</span>
+            </button>
+            <button onclick="studioAddPart('sphere')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs font-bold rounded-lg transition flex items-center gap-1.5">
+              <span>+ Sphere</span>
+            </button>
+            <button onclick="studioAddPart('tree')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-xs font-bold rounded-lg transition flex items-center gap-1.5">
+              <span>+ Tree</span>
+            </button>
+
+            <div class="h-5 w-px bg-slate-700 mx-1"></div>
+
+            <button onclick="toggleStudioPlay()" id="studioPlayBtn" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition flex items-center gap-1.5 shadow-md">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span id="studioPlayText">اختبار اللعبة (Play)</span>
+            </button>
+
+            <button onclick="openPublishModal()" class="px-3.5 py-1.5 bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold rounded-lg transition shadow-md flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+              <span>نشر إلى روبلوكس (Publish)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Studio Main Workspace: Sidebar Tools + 3D Viewport -->
+        <div class="flex-1 flex min-h-0 relative">
+          <!-- Left Tool Palette -->
+          <div class="w-64 bg-slate-800/90 border-r border-slate-700 p-3 flex flex-col gap-4 text-xs overflow-y-auto">
+            <div>
+              <h3 class="font-bold text-slate-300 uppercase tracking-wider text-[11px] mb-2">Properties & Colors</h3>
+              <p class="text-slate-400 mb-2">اختر لون المجسم الجديد:</p>
+              <div class="grid grid-cols-5 gap-1.5" id="colorPalette">
+                <button onclick="setStudioColor('#e2231a')" class="w-8 h-8 rounded bg-red-600 hover:scale-110 transition border border-white/20"></button>
+                <button onclick="setStudioColor('#00a2ff')" class="w-8 h-8 rounded bg-sky-500 hover:scale-110 transition border border-white/20"></button>
+                <button onclick="setStudioColor('#22c55e')" class="w-8 h-8 rounded bg-emerald-500 hover:scale-110 transition border border-white/20"></button>
+                <button onclick="setStudioColor('#eab308')" class="w-8 h-8 rounded bg-yellow-500 hover:scale-110 transition border border-white/20"></button>
+                <button onclick="setStudioColor('#a855f7')" class="w-8 h-8 rounded bg-purple-500 hover:scale-110 transition border border-white/20"></button>
+                <button onclick="setStudioColor('#f97316')" class="w-8 h-8 rounded bg-orange-500 hover:scale-110 transition border border-white/20"></button>
+                <button onclick="setStudioColor('#ec4899')" class="w-8 h-8 rounded bg-pink-500 hover:scale-110 transition border border-white/20"></button>
+                <button onclick="setStudioColor('#64748b')" class="w-8 h-8 rounded bg-slate-500 hover:scale-110 transition border border-white/20"></button>
+                <button onclick="setStudioColor('#0f172a')" class="w-8 h-8 rounded bg-slate-900 hover:scale-110 transition border border-white/20"></button>
+                <button onclick="setStudioColor('#ffffff')" class="w-8 h-8 rounded bg-white hover:scale-110 transition border border-white/20"></button>
+              </div>
+            </div>
+
+            <div>
+              <h3 class="font-bold text-slate-300 uppercase tracking-wider text-[11px] mb-2">Explorer Hierarchy</h3>
+              <div class="bg-slate-900/80 rounded-lg p-2 font-mono text-[11px] space-y-1 text-slate-300 max-h-36 overflow-y-auto">
+                <div class="text-indigo-400">📁 Workspace</div>
+                <div class="pl-3 text-slate-400">└ 🟫 Baseplate</div>
+                <div class="pl-3 text-slate-400">└ 💡 DirectionalLight</div>
+                <div id="explorerPartsList">
+                  <div class="pl-3 text-emerald-400">└ 📦 SpawnPoint</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Luau Scripting Snippet Simulator -->
+            <div>
+              <h3 class="font-bold text-slate-300 uppercase tracking-wider text-[11px] mb-1">Luau Script Editor</h3>
+              <p class="text-[10px] text-slate-400 mb-2">برمجة أحداث وميكانيكا اللعبة:</p>
+              <textarea id="studioScriptInput" class="w-full h-24 bg-slate-950 text-emerald-400 font-mono text-[11px] p-2 rounded-lg border border-slate-700 focus:outline-none" spellcheck="false">
+-- ServerScriptService
+local part = script.Parent
+part.Touched:Connect(function(hit)
+    print("Player reached the checkpoint!")
+end)</textarea>
+            </div>
+
+            <div class="mt-auto">
+              <button onclick="clearStudioScene()" class="w-full py-2 bg-rose-950/60 hover:bg-rose-900 text-rose-300 font-bold rounded-lg border border-rose-800 text-[11px] transition">
+                إعادة ضبط المشهد (Clear)
+              </button>
+            </div>
+          </div>
+
+          <!-- 3D Three.js Studio Canvas -->
+          <div class="flex-1 relative bg-slate-950 overflow-hidden" id="studioCanvasContainer">
+            <canvas id="studioCanvas" class="w-full h-full block"></canvas>
+            
+            <div class="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg text-[11px] text-slate-300 pointer-events-none border border-white/10 flex items-center gap-3">
+              <span>🖱️ اسحب بالماوس لتحريك الكاميرا</span>
+              <span>•</span>
+              <span>🎮 اضغط Play للتجربة</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Avatar Editor View -->
+      <section id="view-avatar" class="view-content hidden flex-1 px-4 md:px-8 py-6 overflow-y-auto">
+        <div class="max-w-4xl mx-auto">
+          <h2 class="text-2xl font-black text-slate-900 mb-2">Avatar Editor • تعديل الشخصية</h2>
+          <p class="text-sm text-slate-500 mb-6">خصص شخصيتك في روبلوكس وغير الملابس والألوان والإكسسوارات</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- 3D Avatar Preview Box -->
+            <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col items-center justify-center relative min-h-[320px]">
+              <div id="avatarPreviewFigure" class="w-40 h-56 relative flex flex-col items-center justify-center">
+                <!-- Head -->
+                <div id="avatarHead" class="w-14 h-14 bg-amber-200 rounded-xl border-2 border-slate-700 relative shadow-sm transition-colors flex items-center justify-center text-xl">
+                  <span id="avatarFaceEmoji">🙂</span>
+                  <div id="avatarHatAccessory" class="absolute -top-4 text-2xl">🧢</div>
+                </div>
+                <!-- Torso -->
+                <div id="avatarTorso" class="w-24 h-24 bg-sky-500 rounded-xl border-2 border-slate-700 mt-1 transition-colors flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                  <span>ROBLOX</span>
+                </div>
+                <!-- Legs -->
+                <div class="flex gap-1 mt-1">
+                  <div id="avatarLegLeft" class="w-11 h-20 bg-emerald-600 rounded-lg border-2 border-slate-700 transition-colors"></div>
+                  <div id="avatarLegRight" class="w-11 h-20 bg-emerald-600 rounded-lg border-2 border-slate-700 transition-colors"></div>
+                </div>
+              </div>
+              <span class="mt-4 text-xs font-bold text-slate-600" id="avatarOwnerLabel">Salman123's Avatar</span>
+            </div>
+
+            <!-- Customizer Options -->
+            <div class="md:col-span-2 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-5">
+              <div>
+                <h4 class="font-bold text-sm text-slate-800 mb-2">لون البشرة (Skin Color):</h4>
+                <div class="flex gap-2">
+                  <button onclick="setAvatarPartColor('skin', '#fed7aa')" class="w-10 h-10 rounded-full bg-amber-200 border-2 border-slate-300 hover:scale-105 transition"></button>
+                  <button onclick="setAvatarPartColor('skin', '#fcd34d')" class="w-10 h-10 rounded-full bg-yellow-300 border-2 border-slate-300 hover:scale-105 transition"></button>
+                  <button onclick="setAvatarPartColor('skin', '#d97706')" class="w-10 h-10 rounded-full bg-amber-600 border-2 border-slate-300 hover:scale-105 transition"></button>
+                  <button onclick="setAvatarPartColor('skin', '#78350f')" class="w-10 h-10 rounded-full bg-amber-900 border-2 border-slate-300 hover:scale-105 transition"></button>
+                </div>
+              </div>
+
+              <div>
+                <h4 class="font-bold text-sm text-slate-800 mb-2">لون القميص (Shirt Color):</h4>
+                <div class="flex gap-2">
+                  <button onclick="setAvatarPartColor('torso', '#0284c7')" class="w-10 h-10 rounded-xl bg-sky-600 border-2 border-slate-300 hover:scale-105 transition"></button>
+                  <button onclick="setAvatarPartColor('torso', '#dc2626')" class="w-10 h-10 rounded-xl bg-rose-600 border-2 border-slate-300 hover:scale-105 transition"></button>
+                  <button onclick="setAvatarPartColor('torso', '#16a34a')" class="w-10 h-10 rounded-xl bg-emerald-600 border-2 border-slate-300 hover:scale-105 transition"></button>
+                  <button onclick="setAvatarPartColor('torso', '#9333ea')" class="w-10 h-10 rounded-xl bg-purple-600 border-2 border-slate-300 hover:scale-105 transition"></button>
+                  <button onclick="setAvatarPartColor('torso', '#1e293b')" class="w-10 h-10 rounded-xl bg-slate-800 border-2 border-slate-300 hover:scale-105 transition"></button>
+                </div>
+              </div>
+
+              <div>
+                <h4 class="font-bold text-sm text-slate-800 mb-2">القبعة والإكسسوار (Hat & Headgear):</h4>
+                <div class="grid grid-cols-4 gap-2">
+                  <button onclick="setAvatarHat('🧢')" class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-2xl hover:bg-slate-100 transition">🧢</button>
+                  <button onclick="setAvatarHat('👑')" class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-2xl hover:bg-slate-100 transition">👑</button>
+                  <button onclick="setAvatarHat('🎩')" class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-2xl hover:bg-slate-100 transition">🎩</button>
+                  <button onclick="setAvatarHat('🤠')" class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-2xl hover:bg-slate-100 transition">🤠</button>
+                </div>
+              </div>
+
+              <div>
+                <button onclick="saveAvatarSettings()" class="w-full py-3 bg-[#00a2ff] text-white font-bold rounded-xl shadow-lg shadow-sky-500/20 hover:bg-sky-600 transition">
+                  حفظ التعديلات في الحساب
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Charts View -->
+      <section id="view-charts" class="view-content hidden flex-1 px-4 md:px-8 py-6 overflow-y-auto">
+        <h2 class="text-2xl font-black text-slate-900 mb-2">Top Charts • قوائم الصدارة العالمية</h2>
+        <p class="text-sm text-slate-500 mb-6">الألعاب الأكثر شعبية ولعباً على روبلوكس هذا الشهر</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="chartsRankList">
+          <!-- Filled by JS -->
+        </div>
+      </section>
+
+      <!-- Marketplace / Shop View -->
+      <section id="view-shop" class="view-content hidden flex-1 px-4 md:px-8 py-6 overflow-y-auto">
+        <!-- Shop Header & Banner -->
+        <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-sky-600 via-indigo-600 to-purple-600 p-6 rounded-3xl text-white shadow-lg">
+          <div>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-black uppercase tracking-wider mb-2">
+              <span>🛍️ Roblox Marketplace</span>
+              <span>•</span>
+              <span>متجر روبلوكس الرسمي</span>
+            </div>
+            <h2 class="text-2xl md:text-3xl font-black tracking-tight">اشتري أروع الأشكال والإكسسوارات بالروبوكس!</h2>
+            <p class="text-xs md:text-sm text-sky-100 mt-1">تصفح قبعات Dominus الأسطورية، الأجنحة، الملابس النادرة والوجوه الحصرية</p>
+          </div>
+          <!-- Quick Balance and Robux Refill -->
+          <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 flex items-center gap-4 shrink-0">
+            <div>
+              <div class="text-[11px] text-sky-200 font-semibold">رصيدك الحالي:</div>
+              <div class="flex items-center gap-1.5 text-xl font-black">
+                <svg class="w-5 h-5 text-emerald-300" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 21 8.5 21 15.5 12 22 3 15.5 3 8.5 12 2"/><circle cx="12" cy="12" r="2.5" fill="#1e293b"/></svg>
+                <span class="shopUserRobuxDisplay">1,450</span>
+              </div>
+            </div>
+            <button onclick="openRobuxModal()" class="px-4 py-2 bg-[#00a651] hover:bg-[#008f45] text-white text-xs font-extrabold rounded-xl shadow-md transition">
+              + شحن روبوكس
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter & Search Bar -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+          <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-bold" id="shopCategoryPills">
+            <button onclick="filterShopCategory('all', this)" class="shop-filter-btn px-4 py-2 rounded-xl bg-slate-900 text-white shadow-sm transition">الكل (All)</button>
+            <button onclick="filterShopCategory('hats', this)" class="shop-filter-btn px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition">🎩 قبعات (Hats)</button>
+            <button onclick="filterShopCategory('shirts', this)" class="shop-filter-btn px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition">👕 ملابس (Shirts)</button>
+            <button onclick="filterShopCategory('faces', this)" class="shop-filter-btn px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition">🙂 وجوه (Faces)</button>
+            <button onclick="filterShopCategory('accessories', this)" class="shop-filter-btn px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition">✨ إكسسوارات</button>
+            <button onclick="filterShopCategory('limited', this)" class="shop-filter-btn px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 transition">🔥 ليمتد نادِر (Limited)</button>
+          </div>
+
+          <div class="relative w-full sm:w-64">
+            <input type="text" id="shopSearchInput" oninput="handleShopSearch(this.value)" placeholder="ابحث في المتجر..." class="w-full px-4 py-2 pl-9 rounded-xl border border-slate-200 bg-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm">
+            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </div>
+        </div>
+
+        <!-- Shop Items Grid -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4" id="shopItemsGrid">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </section>
+
+      <!-- Chat Mock View -->
+      <section id="view-chat" class="view-content hidden flex-1 px-4 md:px-8 py-6 overflow-y-auto">
+        <div class="max-w-2xl mx-auto bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+          <h2 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <span>💬 محادثات الأصدقاء</span>
+          </h2>
+          <div class="space-y-4">
+            <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-2xl">
+              <div class="w-10 h-10 rounded-full bg-amber-200 flex items-center justify-center font-bold">CR</div>
+              <div>
+                <span class="font-bold text-xs text-slate-800">CR7MS093</span>
+                <p class="text-sm text-slate-600 mt-0.5">تعال نلعب لعبة Steal An Egg الحين سويت سيرفر خاص!</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-2xl">
+              <div class="w-10 h-10 rounded-full bg-sky-200 flex items-center justify-center font-bold">TA</div>
+              <div>
+                <span class="font-bold text-xs text-slate-800">tamem5511</span>
+                <p class="text-sm text-slate-600 mt-0.5">شفت التحديث الجديد حق الطيران في Plane Simulator؟ روعة!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- More Mock View -->
+      <section id="view-more" class="view-content hidden flex-1 px-4 md:px-8 py-6 overflow-y-auto">
+        <div class="max-w-xl mx-auto space-y-3">
+          <h2 class="text-xl font-black text-slate-800 mb-4">المزيد من خيارات روبلوكس</h2>
+          <button onclick="openRobuxModal()" class="w-full p-4 bg-white rounded-2xl border border-slate-200 text-left font-bold text-slate-800 flex justify-between items-center hover:bg-slate-50">
+            <span>💰 متجر الروبوكس والاشتراكات (Robux & Plus)</span>
+            <span>➔</span>
+          </button>
+          <button onclick="navigateTo('studio')" class="w-full p-4 bg-white rounded-2xl border border-slate-200 text-left font-bold text-slate-800 flex justify-between items-center hover:bg-slate-50">
+            <span>🛠️ روبلوكس ستوديو (Roblox Studio)</span>
+            <span>➔</span>
+          </button>
+          <button onclick="showToast('تم التحقق من الأمان بنجاح')" class="w-full p-4 bg-white rounded-2xl border border-slate-200 text-left font-bold text-slate-800 flex justify-between items-center hover:bg-slate-50">
+            <span>🔒 الأمان والخصوصية والحساب</span>
+            <span>➔</span>
+          </button>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- Robux Packages & Roblox Plus Modal (Matching Screenshot 2, 3 & 4) -->
+  <div id="robuxStoreModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm hidden transition-all duration-200">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden border border-slate-100">
+      
+      <!-- Modal Header (Matches Screenshot 2) -->
+      <div class="px-6 pt-5 pb-3 border-b border-slate-100 flex items-start justify-between">
+        <div>
+          <button onclick="closeRobuxModal()" class="text-slate-400 hover:text-slate-700 transition p-1 -ml-1 text-xl font-bold" title="إغلاق">
+            ✕
+          </button>
+          <h2 class="text-2xl font-black text-slate-900 tracking-tight mt-1">Robux packages</h2>
+          <p class="text-[11px] text-slate-500 font-medium">By purchasing Robux, you agree to our Terms of Use, including the arbitration clause and revocation policy.</p>
+        </div>
+      </div>
+
+      <!-- Packages Scrollable Content -->
+      <div class="px-6 py-4 overflow-y-auto space-y-6 flex-1">
+        
+        <!-- Robux Rows matching exact prices and Euro currency from screenshot 2 -->
+        <div class="space-y-2.5">
+          
+          <div class="flex items-center justify-between py-2 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-slate-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 21 8.5 21 15.5 12 22 3 15.5 3 8.5 12 2"/><circle cx="12" cy="12" r="2.5"/></svg>
+              <span class="text-base font-black text-slate-900">22,500</span>
+            </div>
+            <button onclick="buyRobuxPackage(22500, '€239.99')" class="px-6 py-2 bg-slate-100 hover:bg-slate-200 font-bold text-xs rounded-xl text-slate-800 transition">
+              €239.99
+            </button>
+          </div>
+
+          <div class="flex items-center justify-between py-2 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-slate-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 21 8.5 21 15.5 12 22 3 15.5 3 8.5 12 2"/><circle cx="12" cy="12" r="2.5"/></svg>
+              <span class="text-base font-black text-slate-900">10,000</span>
+            </div>
+            <button onclick="buyRobuxPackage(10000, '€119.99')" class="px-6 py-2 bg-slate-100 hover:bg-slate-200 font-bold text-xs rounded-xl text-slate-800 transition">
+              €119.99
+            </button>
+          </div>
+
+          <div class="flex items-center justify-between py-2 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-slate-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 21 8.5 21 15.5 12 22 3 15.5 3 8.5 12 2"/><circle cx="12" cy="12" r="2.5"/></svg>
+              <span class="text-base font-black text-slate-900">4,500</span>
+            </div>
+            <button onclick="buyRobuxPackage(4500, '€59.99')" class="px-6 py-2 bg-slate-100 hover:bg-slate-200 font-bold text-xs rounded-xl text-slate-800 transition">
+              €59.99
+            </button>
+          </div>
+
+          <div class="flex items-center justify-between py-2 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-slate-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 21 8.5 21 15.5 12 22 3 15.5 3 8.5 12 2"/><circle cx="12" cy="12" r="2.5"/></svg>
+              <span class="text-base font-black text-slate-900">3,150</span>
+            </div>
+            <button onclick="buyRobuxPackage(3150, '€39.99')" class="px-6 py-2 bg-slate-100 hover:bg-slate-200 font-bold text-xs rounded-xl text-slate-800 transition">
+              €39.99
+            </button>
+          </div>
+
+          <div class="flex items-center justify-between py-2 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-slate-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 21 8.5 21 15.5 12 22 3 15.5 3 8.5 12 2"/><circle cx="12" cy="12" r="2.5"/></svg>
+              <span class="text-base font-black text-slate-900">1,700</span>
+            </div>
+            <button onclick="buyRobuxPackage(1700, '€23.99')" class="px-6 py-2 bg-slate-100 hover:bg-slate-200 font-bold text-xs rounded-xl text-slate-800 transition">
+              €23.99
+            </button>
+          </div>
+
+          <div class="flex items-center justify-between py-2 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-slate-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 21 8.5 21 15.5 12 22 3 15.5 3 8.5 12 2"/><circle cx="12" cy="12" r="2.5"/></svg>
+              <span class="text-base font-black text-slate-900">1,200</span>
+            </div>
+            <button onclick="buyRobuxPackage(1200, '€17.99')" class="px-6 py-2 bg-slate-100 hover:bg-slate-200 font-bold text-xs rounded-xl text-slate-800 transition">
+              €17.99
+            </button>
+          </div>
+
+          <!-- 800 Robux Package (Special Green Button with "For you" Pill - matches Screenshot 2) -->
+          <div class="flex items-center justify-between py-2.5 border-b border-slate-100 bg-emerald-50/40 -mx-2 px-2 rounded-xl">
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-slate-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 21 8.5 21 15.5 12 22 3 15.5 3 8.5 12 2"/><circle cx="12" cy="12" r="2.5"/></svg>
+                <span class="text-base font-black text-slate-900">800</span>
+              </div>
+              <span class="flex items-center gap-1 text-[11px] font-bold text-slate-600 bg-slate-200/70 px-2 py-0.5 rounded-full">
+                <span>⦿ For you</span>
+              </span>
+            </div>
+            <button onclick="buyRobuxPackage(800, '€11.99')" class="px-8 py-2.5 bg-[#00a651] hover:bg-[#008f45] active:scale-95 font-black text-xs rounded-xl text-white shadow-md shadow-emerald-500/30 transition">
+              €11.99
+            </button>
+          </div>
+
+          <div class="flex items-center justify-between py-2 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-slate-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 21 8.5 21 15.5 12 22 3 15.5 3 8.5 12 2"/><circle cx="12" cy="12" r="2.5"/></svg>
+              <span class="text-base font-black text-slate-900">400</span>
+            </div>
+            <button onclick="buyRobuxPackage(400, '€5.99')" class="px-6 py-2 bg-slate-100 hover:bg-slate-200 font-bold text-xs rounded-xl text-slate-800 transition">
+              €5.99
+            </button>
+          </div>
+
+          <div class="flex items-center justify-between py-2 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-slate-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 21 8.5 21 15.5 12 22 3 15.5 3 8.5 12 2"/><circle cx="12" cy="12" r="2.5"/></svg>
+              <span class="text-base font-black text-slate-900">80</span>
+            </div>
+            <button onclick="buyRobuxPackage(80, '€1.19')" class="px-6 py-2 bg-slate-100 hover:bg-slate-200 font-bold text-xs rounded-xl text-slate-800 transition">
+              €1.19
+            </button>
+          </div>
+
+          <div class="flex items-center justify-between py-2">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-slate-800" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 21 8.5 21 15.5 12 22 3 15.5 3 8.5 12 2"/><circle cx="12" cy="12" r="2.5"/></svg>
+              <span class="text-base font-black text-slate-900">40</span>
+            </div>
+            <button onclick="buyRobuxPackage(40, '€0.60')" class="px-6 py-2 bg-slate-100 hover:bg-slate-200 font-bold text-xs rounded-xl text-slate-800 transition">
+              €0.60
+            </button>
+          </div>
+
+        </div>
+
+        <!-- New on Roblox: Roblox Plus Section (Matches Screenshot 3 & 4) -->
+        <div class="pt-4 border-t border-slate-200">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2 font-black text-lg text-slate-900">
+              <div class="w-5 h-5 border-2 border-slate-900 rounded flex items-center justify-center font-mono text-xs">P</div>
+              <span>New on Roblox</span>
+            </div>
+            <a href="#" class="text-xs text-slate-500 font-semibold underline hover:text-slate-800">Learn more</a>
+          </div>
+
+          <!-- Plus Cards Horizontal Layout -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            
+            <!-- Card 1: Roblox Plus -->
+            <div class="border border-slate-200 rounded-2xl p-4 flex flex-col justify-between hover:shadow-md transition">
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="font-extrabold text-sm text-slate-900">Roblox Plus</h4>
+                  <span class="font-bold text-xs text-slate-700">€5.99</span>
+                </div>
+                <div class="space-y-2.5 text-xs text-slate-600 mb-4">
+                  <div class="flex items-start gap-2">
+                    <span class="text-slate-800 text-sm">🏷️</span>
+                    <span>Up to 20% off on items and avatars</span>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <span class="text-slate-800 text-sm">🎮</span>
+                    <span>Free private servers</span>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <span class="text-slate-800 text-sm">⬡</span>
+                    <span>Send Robux for free</span>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <span class="text-slate-800 text-sm">🖌️</span>
+                    <span>Customize profile and app theme</span>
+                  </div>
+                </div>
+              </div>
+              <button onclick="subscribeRobloxPlus('Roblox Plus', '€5.99', 0)" class="w-full py-2 bg-slate-100 hover:bg-slate-200 font-bold text-xs rounded-xl text-slate-800 transition">
+                €5.99/month
+              </button>
+            </div>
+
+            <!-- Card 2: Plus 500 -->
+            <div class="border border-slate-200 rounded-2xl p-4 flex flex-col justify-between hover:shadow-md transition">
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="font-extrabold text-sm text-slate-900">Plus 500</h4>
+                  <div class="text-right">
+                    <span class="line-through text-[11px] text-slate-400">€11.98</span>
+                    <span class="font-bold text-xs text-slate-700 ml-1">€10.99</span>
+                  </div>
+                </div>
+                <div class="space-y-2.5 text-xs text-slate-600 mb-4">
+                  <div class="flex items-start gap-2">
+                    <span class="text-slate-800 text-sm">🛡️</span>
+                    <span>Everything in Plus</span>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <span class="text-slate-800 text-sm">⬡</span>
+                    <span>+500 Robux every month</span>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <span class="text-slate-800 text-sm">🐷</span>
+                    <span>€11.98 total value</span>
+                  </div>
+                </div>
+              </div>
+              <button onclick="subscribeRobloxPlus('Plus 500', '€10.99', 500)" class="w-full py-2 bg-slate-100 hover:bg-slate-200 font-bold text-xs rounded-xl text-slate-800 transition">
+                €10.99/month
+              </button>
+            </div>
+
+            <!-- Card 3: Plus 1000 -->
+            <div class="border border-slate-200 rounded-2xl p-4 flex flex-col justify-between hover:shadow-md transition">
+              <div>
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="font-extrabold text-sm text-slate-900">Plus 1000</h4>
+                  <div class="text-right">
+                    <span class="line-through text-[11px] text-slate-400">€17.98</span>
+                    <span class="font-bold text-xs text-slate-700 ml-1">€15.99</span>
+                  </div>
+                </div>
+                <div class="space-y-2.5 text-xs text-slate-600 mb-4">
+                  <div class="flex items-start gap-2">
+                    <span class="text-slate-800 text-sm">🛡️</span>
+                    <span>Everything in Plus</span>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <span class="text-slate-800 text-sm">⬡</span>
+                    <span>+1,000 Robux every month</span>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <span class="text-slate-800 text-sm">🐷</span>
+                    <span>€17.98 total value</span>
+                  </div>
+                </div>
+              </div>
+              <button onclick="subscribeRobloxPlus('Plus 1000', '€15.99', 1000)" class="w-full py-2 bg-slate-100 hover:bg-slate-200 font-bold text-xs rounded-xl text-slate-800 transition">
+                €15.99/month
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Gift Card Section -->
+        <div class="pt-4 border-t border-slate-200">
+          <h4 class="font-bold text-xs text-slate-700 uppercase mb-2">More ways to get Robux</h4>
+          <div class="border border-slate-200 rounded-2xl p-3.5 flex items-center justify-between">
+            <div>
+              <div class="font-bold text-sm text-slate-900">Gift Card</div>
+              <div class="text-xs text-slate-500">Enjoy 25% more Robux on Roblox gift cards</div>
+            </div>
+            <button onclick="buyRobuxPackage(2000, 'Gift Card')" class="px-5 py-2 bg-slate-100 hover:bg-slate-200 font-bold text-xs rounded-xl text-slate-800 transition">
+              Buy
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Shop Item Modal -->
+  <div id="shopItemModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm hidden transition-all duration-200">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 p-6 relative">
+      <button onclick="closeShopItemModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-sm transition">
+        ✕
+      </button>
+
+      <div class="flex flex-col items-center text-center">
+        <div id="modalItemPreview" class="w-32 h-32 rounded-2xl flex items-center justify-center text-6xl shadow-inner border border-slate-100 mb-4 transition-all">
+          🧢
+        </div>
+
+        <span id="modalItemCategory" class="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 mb-1">
+          Hats
+        </span>
+        <h3 id="modalItemTitle" class="text-xl font-black text-slate-900">Dominus Frigidus</h3>
+        <p id="modalItemCreator" class="text-xs text-slate-500 font-semibold mb-3">By Roblox Official</p>
+        <p id="modalItemDesc" class="text-xs text-slate-600 max-w-sm mb-5 leading-relaxed">
+          عنصر نادر ومميز يمنح شخصيتك مظهراً أسطورياً وفخماً داخل كل ألعاب روبلوكس.
+        </p>
+
+        <!-- Pricing & Balance Breakdown Box -->
+        <div class="w-full bg-slate-50 border border-slate-200/80 rounded-2xl p-4 mb-5 text-xs font-semibold text-slate-700 space-y-2">
+          <div class="flex justify-between items-center">
+            <span>سعر العنصر (Price):</span>
+            <div class="flex items-center gap-1 font-black text-sm text-slate-900">
+              <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 21 8.5 21 15.5 12 22 3 15.5 3 8.5 12 2"/><circle cx="12" cy="12" r="2.5" fill="white"/></svg>
+              <span id="modalItemPrice">500</span>
+            </div>
+          </div>
+          <div class="flex justify-between items-center text-slate-500">
+            <span>رصيدك من الروبوكس:</span>
+            <div class="flex items-center gap-1 font-bold">
+              <span class="shopUserRobuxDisplay">1,450</span> R$
+            </div>
+          </div>
+          <div class="border-t border-slate-200 pt-2 flex justify-between items-center font-bold text-slate-900">
+            <span>الرصيد المتبقي بعد الشراء:</span>
+            <span id="modalRemainingBalance" class="text-emerald-600 font-black">950 R$</span>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="w-full flex gap-3" id="shopModalActionButtons">
+          <button type="button" onclick="closeShopItemModal()" class="flex-1 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+            إلغاء
+          </button>
+          <button id="modalBuyConfirmBtn" onclick="confirmShopPurchase()" class="flex-[2] py-3 rounded-xl bg-[#00a651] hover:bg-[#008f45] text-white font-extrabold text-xs transition shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2">
+            <span>شراء وارتداء فوراً</span>
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><polygon points="12 2 21 8.5 21 15.5 12 22 3 15.5 3 8.5 12 2"/><circle cx="12" cy="12" r="2.5" fill="white"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Playable Game Detail Modal with 3D Simulation -->
+  <div id="gameDetailModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-md hidden transition-all duration-200">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[95vh] flex flex-col overflow-hidden border border-slate-200">
+      
+      <!-- Top banner / Interactive Canvas & Close button -->
+      <div class="relative h-60 sm:h-72 w-full bg-slate-900 shrink-0 overflow-hidden" id="modalGameBanner">
+        <canvas id="miniGameCanvas" class="w-full h-full block"></canvas>
+
+        <button onclick="closeGameModal()" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center font-bold text-sm transition z-10">
+          ✕
+        </button>
+
+        <!-- Big Play Button Overlay -->
+        <div id="gamePlayOverlay" class="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center gap-3">
+          <button onclick="launchPlayableGame()" class="w-20 h-20 rounded-full bg-[#00a651] hover:bg-[#008f45] hover:scale-110 active:scale-95 text-white flex items-center justify-center shadow-2xl shadow-emerald-500/50 transition">
+            <svg class="w-10 h-10 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </button>
+          <span class="text-white font-extrabold text-sm tracking-wide drop-shadow">انقر للعب الآن (PLAY)</span>
+        </div>
+
+        <!-- In-game controls HUD -->
+        <div id="inGameHUD" class="absolute top-3 left-3 hidden flex items-center gap-3 bg-black/70 px-3.5 py-1.5 rounded-full text-white text-xs font-bold">
+          <span>❤️ 100%</span>
+          <span>🪙 Score: <span id="gameScoreDisplay">0</span></span>
+          <button onclick="stopPlayableGame()" class="ml-2 px-2.5 py-0.5 bg-rose-600 hover:bg-rose-500 rounded text-[10px]">خروج</button>
+        </div>
+
+        <!-- Touch Controls for mobile/tablet in game modal -->
+        <div id="touchGameControls" class="absolute bottom-3 inset-x-3 hidden flex justify-between items-center pointer-events-none">
+          <div class="flex gap-2 pointer-events-auto">
+            <button onclick="movePlayerLeft()" class="w-11 h-11 rounded-full bg-black/60 text-white font-black text-sm active:bg-black/90">◀</button>
+            <button onclick="movePlayerRight()" class="w-11 h-11 rounded-full bg-black/60 text-white font-black text-sm active:bg-black/90">▶</button>
+          </div>
+          <button onclick="makePlayerJump()" class="w-12 h-12 rounded-full bg-[#00a651] text-white font-black text-xs active:bg-emerald-700 pointer-events-auto shadow-lg">JUMP</button>
+        </div>
+      </div>
+
+      <!-- Game Info & Metadata -->
+      <div class="p-6 flex-1 overflow-y-auto space-y-4">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h2 id="modalGameTitle" class="text-2xl font-black text-slate-900">Game Title</h2>
+            <p id="modalGameCreator" class="text-xs text-slate-500 font-semibold mt-0.5">By Roblox Studios</p>
+          </div>
+          <button onclick="launchPlayableGame()" class="px-6 py-3 bg-[#00a651] hover:bg-[#008f45] text-white font-extrabold rounded-2xl shadow-md shadow-emerald-600/25 flex items-center gap-2 text-sm transition">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <span>Play</span>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-4 text-xs font-bold text-slate-600 pt-2 border-t border-slate-100">
+          <div class="flex items-center gap-1">
+            <span class="text-emerald-600">👍</span>
+            <span id="modalGameRating">94%</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <span class="text-slate-400">👤</span>
+            <span id="modalGamePlayers">45.2K Active</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <span class="text-amber-500">⭐</span>
+            <span>Favorite</span>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider mb-1">About Game</h4>
+          <p id="modalGameDesc" class="text-sm text-slate-600 leading-relaxed font-normal">
+            استمتع بأحدث التحديثات والمغامرات داخل روبلوكس مع أصدقائك في خوادم سريعة ومجانية.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Publish Game from Studio Modal -->
+  <div id="publishModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm hidden">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-md border border-slate-200 shadow-2xl">
+      <h3 class="text-xl font-black text-slate-900 mb-1">نشر لعبتك إلى منصة روبلوكس 🚀</h3>
+      <p class="text-xs text-slate-500 mb-4">ستظهر لعبتك فوراً في الصفحة الرئيسية لجميع الأصدقاء واللاعبين!</p>
+
+      <form onsubmit="handlePublishGame(event)" class="space-y-3.5">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">اسم اللعبة (Game Name):</label>
+          <input type="text" id="newGameTitle" required value="Salman's Super Obby!" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">وصف اللعبة (Description):</label>
+          <textarea id="newGameDesc" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-sky-500 h-20">تحدي باركور أوبي حماسي صنعته بنفسي في Roblox Studio! حاول الوصول للقمة.</textarea>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="closePublishModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">إلغاء</button>
+          <button type="submit" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition shadow-md shadow-indigo-600/30">نشر اللعبة الآن</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    /* Application Core State */
+    const appState = {
+      isLoggedIn: false,
+      currentUser: {
+        username: 'Salman123',
+        robux: 1450,
+        hasPlus: false,
+        avatar: {
+          skin: '#fed7aa',
+          torso: '#0284c7',
+          hat: '🧢',
+          face: '🙂'
+        },
+        inventory: [101, 107]
+      },
+      currentView: 'home',
+      activeGame: null,
+      activeShopItem: null,
+      shopFilter: 'all',
+      shopSearchQuery: '',
+      isPlayingGame: false,
+      studio: {
+        scene: null,
+        camera: null,
+        renderer: null,
+        parts: [],
+        currentColor: '#e2231a',
+        isPlaying: false,
+        animationFrameId: null,
+        initialized: false
+      }
+    };
+
+    /* Sound Synthesizer using Tone.js */
+    const audioSynth = {
+      initialized: false,
+      init() {
+        if (this.initialized) return;
+        try {
+          Tone.start();
+          this.clickSynth = new Tone.MembraneSynth({ pitchDecay: 0.05, octaves: 2 }).toDestination();
+          this.coinSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+          this.oofSynth = new Tone.Synth({ oscillator: { type: 'sawtooth' } }).toDestination();
+          this.initialized = true;
+        } catch (e) {
+          // Delay until interaction
+        }
+      },
+      playClick() {
+        this.init();
+        if (this.clickSynth) {
+          try { this.clickSynth.triggerAttackRelease('C3', '16n'); } catch (e) {}
+        }
+      },
+      playRobuxCash() {
+        this.init();
+        if (this.coinSynth) {
+          try {
+            const now = Tone.now();
+            this.coinSynth.triggerAttackRelease('C5', '16n', now);
+            this.coinSynth.triggerAttackRelease('E5', '16n', now + 0.08);
+            this.coinSynth.triggerAttackRelease('G5', '16n', now + 0.16);
+            this.coinSynth.triggerAttackRelease('C6', '8n', now + 0.24);
+          } catch (e) {}
+        }
+      },
+      playOOF() {
+        this.init();
+        if (this.oofSynth) {
+          try {
+            this.oofSynth.triggerAttackRelease('G2', '8n');
+          } catch (e) {}
+        }
+      }
+    };
+
+    /* Database of 20+ authentic games matching user screenshots */
+    const robloxGamesDatabase = [
+      {
+        id: 1,
+        title: "Emergency Landing [Beta]",
+        creator: "Black Eagle Industries",
+        category: "recommended",
+        rating: "75%",
+        players: "12.4K",
+        desc: "Pilot crippled commercial aircraft to safety under extreme turbulence, mechanical failures and storms!",
+        bgColor: "#1e293b",
+        iconEmoji: "🛬",
+        type: "sim"
+      },
+      {
+        id: 2,
+        title: "Theme Park Tycoon 2",
+        creator: "Panthro",
+        category: "recommended",
+        rating: "89%",
+        players: "28.5K",
+        desc: "Build your own amusement park, craft giant roller coasters, manage food stalls and invite your friends!",
+        bgColor: "#0284c7",
+        iconEmoji: "🎢",
+        type: "tycoon"
+      },
+      {
+        id: 3,
+        title: "Air Crash Studio",
+        creator: "Studio Aero",
+        category: "recommended",
+        rating: "71%",
+        players: "8.1K",
+        desc: "Physics-based aviation crash simulations, black-box testing and runway emergency rescues.",
+        bgColor: "#15803d",
+        iconEmoji: "✈️",
+        type: "action"
+      },
+      {
+        id: 4,
+        title: "Create a Cart Ride!",
+        creator: "Cart Builders Inc",
+        category: "popular",
+        rating: "84%",
+        players: "1.5K",
+        desc: "Construct twisty tracks with loops, boosters, loop-de-loops and cart rides into funny statues!",
+        bgColor: "#d97706",
+        iconEmoji: "🛒",
+        type: "creative"
+      },
+      {
+        id: 5,
+        title: "Land or Die! 🚀 [B2 Bomber]",
+        creator: "Airforce Elite",
+        category: "popular",
+        rating: "93%",
+        players: "2.5K",
+        desc: "Navigate the stealth B2 Bomber through mountain canyons at supersonic speeds without crashing!",
+        bgColor: "#334155",
+        iconEmoji: "🛩️",
+        type: "flight"
+      },
+      {
+        id: 6,
+        title: "Avionics | Plane Crash Simulator",
+        creator: "LDH Sim",
+        category: "popular",
+        rating: "68%",
+        players: "433",
+        desc: "Detailed cockpit controls and realistic avionics failure troubleshooting.",
+        bgColor: "#b91c1c",
+        iconEmoji: "🛫",
+        type: "flight"
+      },
+      {
+        id: 7,
+        title: "+1 Speed Keyboard Escape | Candy & Choc...",
+        creator: "Speedy Obbies",
+        category: "popular",
+        rating: "96%",
+        players: "87.3K",
+        desc: "Every second you gain +1 Speed! Run across candy keyboards, jump chocolate rivers and escape the giant chef!",
+        bgColor: "#7c3aed",
+        iconEmoji: "⚡",
+        type: "speed"
+      },
+      {
+        id: 8,
+        title: "Pilot Training Flight Simulator",
+        creator: "Orange12341",
+        category: "popular",
+        rating: "93%",
+        players: "4.2K",
+        desc: "Fly over 80+ historic and modern aircraft, land on aircraft carriers and master sea planes.",
+        bgColor: "#0369a1",
+        iconEmoji: "🛩️",
+        type: "flight"
+      },
+      {
+        id: 9,
+        title: "Brookhaven 🏡RP",
+        creator: "Wolfpaq",
+        category: "popular",
+        rating: "85%",
+        players: "225K",
+        desc: "A place to hangout with like-minded people. Own houses, drive cool cars, and explore Brookhaven city!",
+        bgColor: "#0d9488",
+        iconEmoji: "🏡",
+        type: "roleplay"
+      },
+      {
+        id: 10,
+        title: "NBA: Heroes",
+        creator: "NBA Official",
+        category: "standout",
+        subtitle: "Run the court, leave your mark",
+        rating: "91%",
+        players: "34K",
+        desc: "Dunk over opponents, collect superstar cards and dominate the championship basketball arena!",
+        bgColor: "#ea580c",
+        iconEmoji: "🏀",
+        type: "sports"
+      },
+      {
+        id: 11,
+        title: "Creatures of Sonaria",
+        creator: "Sonar Studios",
+        category: "standout",
+        subtitle: "Discover a wild world",
+        rating: "88%",
+        players: "19.8K",
+        desc: "Grow, survive, and explore as exotic prehistoric and mythical beasts in an evolving ecosystem.",
+        bgColor: "#4f46e5",
+        iconEmoji: "🐉",
+        type: "survival"
+      },
+      {
+        id: 12,
+        title: "Conquer the World",
+        creator: "Grand Strategy Games",
+        category: "standout",
+        subtitle: "Global conquest awaits",
+        rating: "86%",
+        players: "15.3K",
+        desc: "Command your nation, build armies, negotiate alliances, and expand across the world map.",
+        bgColor: "#854d0e",
+        iconEmoji: "🌍",
+        type: "strategy"
+      },
+      {
+        id: 13,
+        title: "Blox Fruits",
+        creator: "Gamer Robot Inc",
+        category: "popular",
+        rating: "95%",
+        players: "540K",
+        desc: "Become a master swordsman or powerful fruit user. Train hard across the three seas!",
+        bgColor: "#4338ca",
+        iconEmoji: "⚔️",
+        type: "rpg"
+      },
+      {
+        id: 14,
+        title: "Tower of Hell",
+        creator: "YXGZ",
+        category: "popular",
+        rating: "82%",
+        players: "45K",
+        desc: "Race to the top of the randomly generated 6-section tower with no checkpoints before the timer expires!",
+        bgColor: "#be185d",
+        iconEmoji: "🗼",
+        type: "obby"
+      },
+      {
+        id: 15,
+        title: "Doors 👁️ [Floor 2]",
+        creator: "LSPLASH",
+        category: "popular",
+        rating: "94%",
+        players: "68K",
+        desc: "A roguelike room-escape horror game. Learn each entity's mechanics to survive 100 doors.",
+        bgColor: "#18181b",
+        iconEmoji: "👁️",
+        type: "horror"
+      },
+      {
+        id: 16,
+        title: "Adopt Me!",
+        creator: "DreamCraft",
+        category: "popular",
+        rating: "86%",
+        players: "110K",
+        desc: "Adopt cute pets, hatch rare legendary eggs, trade with players, and design your dream house!",
+        bgColor: "#f43f5e",
+        iconEmoji: "🐶",
+        type: "pets"
+      },
+      {
+        id: 17,
+        title: "Blade Ball",
+        creator: "Wiggity",
+        category: "popular",
+        rating: "92%",
+        players: "95K",
+        desc: "A fast-paced deflecting ball game. Deflect the homing ball with swords and use unique special abilities!",
+        bgColor: "#7e22ce",
+        iconEmoji: "⚽",
+        type: "pvp"
+      },
+      {
+        id: 18,
+        title: "Murder Mystery 2",
+        creator: "Nikilis",
+        category: "popular",
+        rating: "91%",
+        players: "140K",
+        desc: "Can you solve the mystery? Innocent, Sheriff, or Murderer? Collect hundreds of knives and guns!",
+        bgColor: "#991b1b",
+        iconEmoji: "🔪",
+        type: "mystery"
+      },
+      {
+        id: 19,
+        title: "BedWars ⚔️",
+        creator: "Easy.gg",
+        category: "popular",
+        rating: "88%",
+        players: "50K",
+        desc: "Protect your bed, collect iron and diamonds to upgrade armor, and destroy enemy beds to win!",
+        bgColor: "#0284c7",
+        iconEmoji: "🛏️",
+        type: "pvp"
+      },
+      {
+        id: 20,
+        title: "Pet Simulator 99!",
+        creator: "BIG Games Pets",
+        category: "popular",
+        rating: "90%",
+        players: "75K",
+        desc: "Collect coins to buy eggs, hatch huge pets, and explore vast worlds in this huge pet simulation!",
+        bgColor: "#059669",
+        iconEmoji: "🐱",
+        type: "pets"
+      }
+    ];
+
+    /* Official Marketplace Database */
+    const robloxShopDatabase = [
+      {
+        id: 101,
+        title: "Dominus Frigidus",
+        category: "limited",
+        creator: "Roblox",
+        price: 850,
+        icon: "👑",
+        bgColor: "#e0f2fe",
+        type: "hat",
+        desc: "القلنسوة الجليدية الأسطورية الأكثر طلباً في تاريخ روبلوكس مع هالة زرقاء متلألئة!"
+      },
+      {
+        id: 102,
+        title: "Super Super Happy Face",
+        category: "faces",
+        creator: "Roblox",
+        price: 450,
+        icon: "😄",
+        bgColor: "#fef3c7",
+        type: "face",
+        desc: "أشهر وجه مبتسم ناعم في روبلوكس، يعشقه أشهر صناع المحتوى واللاعبين."
+      },
+      {
+        id: 103,
+        title: "Valkyrie Helm of Light",
+        category: "hats",
+        creator: "Roblox",
+        price: 600,
+        icon: "🪖",
+        bgColor: "#f3e8ff",
+        type: "hat",
+        desc: "خوذة الفالكيري الكلاسيكية المزودة بأجنحة فضية لامعة تدل على الشجاعة."
+      },
+      {
+        id: 104,
+        title: "Neon Cyberpunk Katana",
+        category: "accessories",
+        creator: "UGC Elite",
+        price: 350,
+        icon: "⚔️",
+        bgColor: "#ecfdf5",
+        type: "accessory",
+        desc: "سيف كاتانا نيون متوهج يتم ارتداؤه على الظهر ليمنحك مظهر المحارب السريع."
+      },
+      {
+        id: 105,
+        title: "Fire Dragon Wings",
+        category: "accessories",
+        creator: "Studio Aero",
+        price: 500,
+        icon: "🪽",
+        bgColor: "#ffedd5",
+        type: "accessory",
+        desc: "أجنحة تنين مشتعلة بألسنة اللهب النارية تمنحك حضوراً أسطورياً في السيرفرات."
+      },
+      {
+        id: 106,
+        title: "Golden King Crown",
+        category: "hats",
+        creator: "Roblox",
+        price: 300,
+        icon: "🤴",
+        bgColor: "#fef9c3",
+        type: "hat",
+        desc: "تاج الملوك الذهبي الخالص المرصع بالجواهر الياقوتية."
+      },
+      {
+        id: 107,
+        title: "Classic ROBLOX Hoodie",
+        category: "shirts",
+        creator: "Roblox Classic",
+        price: 120,
+        icon: "🧥",
+        bgColor: "#fee2e2",
+        type: "shirt",
+        shirtColor: "#dc2626",
+        desc: "هودي روبلوكس الكلاسيكي الأحمر الشهير المصمم بجودة عالية."
+      },
+      {
+        id: 108,
+        title: "Midnight Void Hoodie",
+        category: "shirts",
+        creator: "Drip Studio",
+        price: 150,
+        icon: "🥋",
+        bgColor: "#e2e8f0",
+        type: "shirt",
+        shirtColor: "#1e293b",
+        desc: "سترة ليلية سوداء أنيقة مع لمسات بنفسجية غامضة تناسب كل الإطلالات."
+      },
+      {
+        id: 109,
+        title: "Rainbow Sparkle Cap",
+        category: "hats",
+        creator: "Rainbow UGC",
+        price: 200,
+        icon: "🧢",
+        bgColor: "#fdf4ff",
+        type: "hat",
+        desc: "كاب عصري متعدد الألوان مع لمعان جذاب في جميع الأجواء."
+      },
+      {
+        id: 110,
+        title: "Headless Skeleton Mask",
+        category: "limited",
+        creator: "Roblox",
+        price: 1200,
+        icon: "💀",
+        bgColor: "#f1f5f9",
+        type: "hat",
+        desc: "قناع الهيكل العظمي النادر والغامض للمحترفين والمجاميع الحصرية."
+      }
+    ];
+
+    /* Auth System Handler Functions */
+    function switchAuthTab(type) {
+      audioSynth.playClick();
+      const loginBtn = document.getElementById('tabLoginBtn');
+      const regBtn = document.getElementById('tabRegisterBtn');
+      const loginContainer = document.getElementById('loginFormContainer');
+      const regContainer = document.getElementById('registerFormContainer');
+      const errBox = document.getElementById('authErrorMsg');
+      if (errBox) errBox.classList.add('hidden');
+
+      if (type === 'login') {
+        loginBtn.className = "flex-1 py-2.5 rounded-xl bg-white text-slate-900 shadow-sm transition-all";
+        regBtn.className = "flex-1 py-2.5 rounded-xl text-slate-500 hover:text-slate-700 transition-all";
+        loginContainer.classList.remove('hidden');
+        regContainer.classList.add('hidden');
+      } else {
+        regBtn.className = "flex-1 py-2.5 rounded-xl bg-white text-slate-900 shadow-sm transition-all";
+        loginBtn.className = "flex-1 py-2.5 rounded-xl text-slate-500 hover:text-slate-700 transition-all";
+        regContainer.classList.remove('hidden');
+        loginContainer.classList.add('hidden');
+      }
+    }
+
+    function handleInputEnter(event) {
+      if (event.key === 'Enter') {
+        handleAuthSubmit(event);
+      }
+    }
+
+    function handleAuthSubmit(event) {
+      if (event) event.preventDefault();
+      audioSynth.playClick();
+
+      const userField = document.getElementById('authUsername');
+      const passField = document.getElementById('authPassword');
+      const errBox = document.getElementById('authErrorMsg');
+      const errText = document.getElementById('authErrorText');
+
+      const username = userField ? userField.value.trim() : '';
+      const password = passField ? passField.value.trim() : '';
+
+      if (!username) {
+        if (errBox && errText) {
+          errText.textContent = "يرجى كتابة اسم المستخدم أولاً";
+          errBox.classList.remove('hidden');
+        }
+        return;
+      }
+
+      if (!password) {
+        if (errBox && errText) {
+          errText.textContent = "يرجى إدخال كلمة المرور للمتابعة";
+          errBox.classList.remove('hidden');
+        }
+        return;
+      }
+
+      if (errBox) errBox.classList.add('hidden');
+      completeLogin(username);
+    }
+
+    function handleRegisterSubmit() {
+      audioSynth.playClick();
+      const regUser = document.getElementById('regUsername').value.trim() || 'Player_' + Math.floor(100 + Math.random() * 900);
+      completeLogin(regUser);
+    }
+
+    function loginQuickGuest() {
+      audioSynth.playClick();
+      completeLogin('Salman123');
+    }
+
+    function completeLogin(username) {
+      appState.isLoggedIn = true;
+      appState.currentUser.username = username;
+
+      // Update UI elements with new username
+      const greetingEl = document.getElementById('userGreeting');
+      if (greetingEl) greetingEl.textContent = username;
+
+      const avatarLabel = document.getElementById('avatarOwnerLabel');
+      if (avatarLabel) avatarLabel.textContent = `${username}'s Avatar`;
+
+      // Smoothly hide auth overlay
+      const overlay = document.getElementById('authOverlay');
+      if (overlay) {
+        overlay.classList.add('opacity-0', 'pointer-events-none');
+        setTimeout(() => {
+          overlay.classList.add('hidden');
+        }, 320);
+      }
+
+      audioSynth.playRobuxCash();
+      showToast(`مرحباً بك مجدداً يا ${username} في روبلوكس!`);
+    }
+
+    function logout() {
+      audioSynth.playClick();
+      appState.isLoggedIn = false;
+      const overlay = document.getElementById('authOverlay');
+      if (overlay) {
+        overlay.classList.remove('hidden');
+        setTimeout(() => {
+          overlay.classList.remove('opacity-0', 'pointer-events-none');
+        }, 10);
+      }
+      showToast('تم تسجيل الخروج بنجاح');
+    }
+
+    function renderGames(filterKeyword = '') {
+      const recContainer = document.getElementById('recommendedGamesGrid');
+      const standoutContainer = document.getElementById('standoutGamesGrid');
+      const allContainer = document.getElementById('allGamesGrid');
+      if (!recContainer || !allContainer) return;
+
+      recContainer.innerHTML = '';
+      if (standoutContainer) standoutContainer.innerHTML = '';
+      allContainer.innerHTML = '';
+
+      const query = filterKeyword.toLowerCase().trim();
+      const filtered = robloxGamesDatabase.filter(g => 
+        g.title.toLowerCase().includes(query) || 
+        g.creator.toLowerCase().includes(query)
+      );
+
+      // Recommended games (Screenshot 1 top 3)
+      const recGames = filtered.filter(g => g.category === 'recommended').slice(0, 3);
+      recGames.forEach(game => {
+        recContainer.appendChild(createRecommendedCard(game));
+      });
+
+      // Standout games (Screenshot 5 banner style)
+      if (standoutContainer) {
+        const standoutGames = filtered.filter(g => g.category === 'standout');
+        standoutGames.forEach(game => {
+          standoutContainer.appendChild(createStandoutCard(game));
+        });
+      }
+
+      // All popular and trending games (Over 20 games)
+      filtered.forEach(game => {
+        allContainer.appendChild(createSmallGameCard(game));
+      });
+
+      const badge = document.getElementById('totalGamesBadge');
+      if (badge) badge.textContent = `${filtered.length} لعبة متوفرة`;
+    }
+
+    function createRecommendedCard(game) {
+      const div = document.createElement('div');
+      div.className = "group cursor-pointer flex flex-col";
+      div.onclick = () => openGameModal(game);
+
+      div.innerHTML = `
+        <div class="w-full aspect-[16/10] rounded-2xl overflow-hidden relative shadow-sm group-hover:shadow-md transition border border-slate-200/70" style="background: ${game.bgColor}">
+          <div class="absolute inset-0 flex items-center justify-center text-5xl group-hover:scale-110 transition duration-300">
+            ${game.iconEmoji}
+          </div>
+          <div class="absolute bottom-2 left-3 text-white text-xs font-bold drop-shadow">
+            ${game.title}
+          </div>
+          <div class="absolute top-2 right-2 bg-black/40 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+            ▶ Play
+          </div>
+        </div>
+        <div class="mt-2">
+          <div class="font-extrabold text-sm text-slate-800 truncate">${game.title}</div>
+          <div class="text-[11px] text-slate-500 font-semibold flex items-center gap-2 mt-0.5">
+            <span class="text-slate-600">👍 ${game.rating} Rating</span>
+            <span>👤 ${game.players}</span>
+          </div>
+        </div>
+      `;
+      return div;
+    }
+
+    function createStandoutCard(game) {
+      const div = document.createElement('div');
+      div.className = "group cursor-pointer flex flex-col";
+      div.onclick = () => openGameModal(game);
+
+      div.innerHTML = `
+        <div class="w-full aspect-[16/9] rounded-2xl overflow-hidden relative shadow-sm group-hover:shadow-md transition border border-slate-200/70" style="background: ${game.bgColor}">
+          <div class="absolute inset-0 flex items-center justify-center text-5xl group-hover:scale-110 transition duration-300">
+            ${game.iconEmoji}
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+          <div class="absolute bottom-3 left-3 text-white">
+            <div class="font-extrabold text-sm">${game.title}</div>
+            <div class="text-[11px] text-slate-200">${game.subtitle || game.desc}</div>
+          </div>
+        </div>
+      `;
+      return div;
+    }
+
+    function createSmallGameCard(game) {
+      const div = document.createElement('div');
+      div.className = "group cursor-pointer flex flex-col";
+      div.onclick = () => openGameModal(game);
+
+      div.innerHTML = `
+        <div class="w-full aspect-square rounded-2xl overflow-hidden relative shadow-sm group-hover:shadow-md transition border border-slate-200/60" style="background: ${game.bgColor}">
+          <div class="absolute inset-0 flex items-center justify-center text-4xl group-hover:scale-110 transition duration-300">
+            ${game.iconEmoji}
+          </div>
+          <div class="absolute bottom-1.5 left-2 right-2 text-white font-bold text-[11px] truncate drop-shadow">
+            ${game.title}
+          </div>
+        </div>
+        <div class="mt-1.5 px-0.5">
+          <div class="font-bold text-xs text-slate-800 truncate">${game.title}</div>
+          <div class="text-[10px] text-slate-500 font-semibold flex items-center gap-1.5 mt-0.5">
+            <span>👍 ${game.rating}</span>
+            <span>👤 ${game.players}</span>
+          </div>
+        </div>
+      `;
+      return div;
+    }
+
+    function filterGames(query) {
+      renderGames(query);
+    }
+
+    function navigateTo(viewName) {
+      audioSynth.playClick();
+      appState.currentView = viewName;
+
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('bg-sky-50', 'text-sky-600');
+        btn.classList.add('text-slate-500');
+      });
+
+      const activeNav = document.getElementById(`nav-${viewName}`);
+      if (activeNav) {
+        activeNav.classList.remove('text-slate-500');
+        activeNav.classList.add('bg-sky-50', 'text-sky-600');
+      }
+
+      document.querySelectorAll('.view-content').forEach(el => {
+        el.classList.add('hidden');
+      });
+
+      const targetView = document.getElementById(`view-${viewName}`);
+      if (targetView) {
+        targetView.classList.remove('hidden');
+      }
+
+      if (viewName === 'studio') {
+        initStudio3D();
+      }
+      
+      if (viewName === 'shop') {
+        renderShopItems();
+      }
+    }
+
+    function openRobuxModal() {
+      audioSynth.playClick();
+      const modal = document.getElementById('robuxStoreModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeRobuxModal() {
+      audioSynth.playClick();
+      const modal = document.getElementById('robuxStoreModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function buyRobuxPackage(amount, priceStr) {
+      audioSynth.playRobuxCash();
+      appState.currentUser.robux += amount;
+      updateRobuxDisplay();
+      closeRobuxModal();
+      showToast(`🎉 تم شحن ${amount.toLocaleString()} Robux بنجاح! شكراً لك`);
+    }
+
+    function subscribeRobloxPlus(tierName, priceStr, robuxBonus) {
+      audioSynth.playRobuxCash();
+      appState.currentUser.hasPlus = true;
+      if (robuxBonus > 0) {
+        appState.currentUser.robux += robuxBonus;
+      }
+      updateRobuxDisplay();
+      closeRobuxModal();
+      showToast(`🌟 مبروك! تم تفعيل اشتراك ${tierName} ومزايا Roblox Plus الحصرية!`);
+    }
+
+    function updateRobuxDisplay() {
+      const el = document.getElementById('robuxDisplay');
+      if (el) {
+        el.textContent = appState.currentUser.robux.toLocaleString();
+        el.classList.add('scale-125', 'text-emerald-600');
+        setTimeout(() => {
+          el.classList.remove('scale-125', 'text-emerald-600');
+        }, 300);
+      }
+
+      document.querySelectorAll('.shopUserRobuxDisplay').forEach(elem => {
+        elem.textContent = appState.currentUser.robux.toLocaleString();
+      });
+    }
+
+    function initStudio3D() {
+      const canvas = document.getElementById('studioCanvas');
+      if (!canvas) return;
+      const container = document.getElementById('studioCanvasContainer');
+      const width = container.clientWidth || 600;
+      const height = container.clientHeight || 450;
+
+      if (!appState.studio.initialized) {
+        appState.studio.scene = new THREE.Scene();
+        appState.studio.scene.background = new THREE.Color(0x111827);
+
+        appState.studio.camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+        appState.studio.camera.position.set(0, 10, 16);
+        appState.studio.camera.lookAt(0, 0, 0);
+
+        appState.studio.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        appState.studio.renderer.setSize(width, height);
+
+        // Lights
+        const ambLight = new THREE.AmbientLight(0xffffff, 0.6);
+        appState.studio.scene.add(ambLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+        dirLight.position.set(10, 20, 10);
+        appState.studio.scene.add(dirLight);
+
+        // Baseplate Grid
+        const gridHelper = new THREE.GridHelper(30, 30, 0x4f46e5, 0x334155);
+        appState.studio.scene.add(gridHelper);
+
+        const baseplateGeo = new THREE.BoxGeometry(30, 0.4, 30);
+        const baseplateMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+        const baseplate = new THREE.Mesh(baseplateGeo, baseplateMat);
+        baseplate.position.y = -0.2;
+        appState.studio.scene.add(baseplate);
+
+        // SpawnPoint platform
+        const spawnGeo = new THREE.CylinderGeometry(2, 2, 0.3, 16);
+        const spawnMat = new THREE.MeshLambertMaterial({ color: 0x059669 });
+        const spawn = new THREE.Mesh(spawnGeo, spawnMat);
+        spawn.position.set(0, 0.15, 0);
+        appState.studio.scene.add(spawn);
+
+        // Mouse Drag Orbit Simulation
+        let isDragging = false;
+        let prevMouseX = 0;
+        let prevMouseY = 0;
+
+        canvas.addEventListener('mousedown', (e) => {
+          isDragging = true;
+          prevMouseX = e.clientX;
+          prevMouseY = e.clientY;
+        });
+
+        window.addEventListener('mouseup', () => { isDragging = false; });
+
+        canvas.addEventListener('mousemove', (e) => {
+          if (!isDragging) return;
+          const deltaX = e.clientX - prevMouseX;
+          const deltaY = e.clientY - prevMouseY;
+          prevMouseX = e.clientX;
+          prevMouseY = e.clientY;
+
+          appState.studio.scene.rotation.y += deltaX * 0.008;
+        });
+
+        // Touch orbit for mobile
+        canvas.addEventListener('touchstart', (e) => {
+          if (e.touches.length === 1) {
+            isDragging = true;
+            prevMouseX = e.touches[0].clientX;
+          }
+        });
+        canvas.addEventListener('touchend', () => { isDragging = false; });
+        canvas.addEventListener('touchmove', (e) => {
+          if (!isDragging || e.touches.length === 0) return;
+          const deltaX = e.touches[0].clientX - prevMouseX;
+          prevMouseX = e.touches[0].clientX;
+          appState.studio.scene.rotation.y += deltaX * 0.01;
+        });
+
+        function animateStudio() {
+          requestAnimationFrame(animateStudio);
+          if (appState.studio.isPlaying) {
+            appState.studio.parts.forEach(part => {
+              part.rotation.y += 0.02;
+            });
+          }
+          appState.studio.renderer.render(appState.studio.scene, appState.studio.camera);
+        }
+        animateStudio();
+
+        appState.studio.initialized = true;
+      } else {
+        appState.studio.renderer.setSize(width, height);
+        appState.studio.camera.aspect = width / height;
+        appState.studio.camera.updateProjectionMatrix();
+      }
+    }
+
+    function setStudioColor(hex) {
+      audioSynth.playClick();
+      appState.studio.currentColor = hex;
+      showToast(`تم اختيار اللون: ${hex}`);
+    }
+
+    function studioAddPart(type) {
+      audioSynth.playClick();
+      if (!appState.studio.scene) return;
+
+      let mesh;
+      const color = appState.studio.currentColor;
+      const mat = new THREE.MeshLambertMaterial({ color });
+
+      const x = (Math.random() - 0.5) * 12;
+      const z = (Math.random() - 0.5) * 12;
+
+      if (type === 'block') {
+        const geo = new THREE.BoxGeometry(2, 2, 2);
+        mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(x, 1, z);
+      } else if (type === 'sphere') {
+        const geo = new THREE.SphereGeometry(1.2, 16, 16);
+        mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(x, 1.2, z);
+      } else if (type === 'tree') {
+        mesh = new THREE.Group();
+        const trunkGeo = new THREE.CylinderGeometry(0.3, 0.4, 2, 8);
+        const trunkMat = new THREE.MeshLambertMaterial({ color: 0x854d0e });
+        const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+        trunk.position.y = 1;
+        mesh.add(trunk);
+
+        const leavesGeo = new THREE.ConeGeometry(1.4, 2.5, 8);
+        const leavesMat = new THREE.MeshLambertMaterial({ color: 0x16a34a });
+        const leaves = new THREE.Mesh(leavesGeo, leavesMat);
+        leaves.position.y = 2.8;
+        mesh.add(leaves);
+
+        mesh.position.set(x, 0, z);
+      }
+
+      appState.studio.scene.add(mesh);
+      appState.studio.parts.push(mesh);
+
+      const explorer = document.getElementById('explorerPartsList');
+      if (explorer) {
+        const partNode = document.createElement('div');
+        partNode.className = "pl-3 text-sky-400";
+        partNode.textContent = `└ 🧱 ${type}_${appState.studio.parts.length}`;
+        explorer.appendChild(partNode);
+      }
+
+      showToast(`تمت إضافة ${type} إلى عالم لعبتك!`);
+    }
+
+    function clearStudioScene() {
+      audioSynth.playOOF();
+      appState.studio.parts.forEach(p => {
+        appState.studio.scene.remove(p);
+      });
+      appState.studio.parts = [];
+      const explorer = document.getElementById('explorerPartsList');
+      if (explorer) explorer.innerHTML = '<div class="pl-3 text-emerald-400">└ 📦 SpawnPoint</div>';
+      showToast('تم تنظيف المشهد');
+    }
+
+    function toggleStudioPlay() {
+      audioSynth.playClick();
+      appState.studio.isPlaying = !appState.studio.isPlaying;
+      const btnText = document.getElementById('studioPlayText');
+      const btn = document.getElementById('studioPlayBtn');
+
+      if (appState.studio.isPlaying) {
+        btnText.textContent = "إيقاف الاختبار (Stop)";
+        btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+        btn.classList.add('bg-rose-600', 'hover:bg-rose-500');
+        showToast('تم تشغيل محاكاة اللعبة والفيزياء في Studio!');
+      } else {
+        btnText.textContent = "اختبار اللعبة (Play)";
+        btn.classList.remove('bg-rose-600', 'hover:bg-rose-500');
+        btn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+        showToast('تم إيقاف الاختبار والعودة لوضع التعديل');
+      }
+    }
+
+    function openPublishModal() {
+      audioSynth.playClick();
+      document.getElementById('publishModal').classList.remove('hidden');
+    }
+
+    function closePublishModal() {
+      document.getElementById('publishModal').classList.add('hidden');
+    }
+
+    function handlePublishGame(e) {
+      e.preventDefault();
+      audioSynth.playRobuxCash();
+
+      const title = document.getElementById('newGameTitle').value.trim() || "لعبة جديدة";
+      const desc = document.getElementById('newGameDesc').value.trim() || "لعبة مخصصة في Roblox Studio";
+
+      const newGameObj = {
+        id: Date.now(),
+        title: title,
+        creator: appState.currentUser.username,
+        category: "recommended",
+        rating: "100%",
+        players: "1",
+        desc: desc,
+        bgColor: "#4f46e5",
+        iconEmoji: "⭐",
+        type: "custom"
+      };
+
+      robloxGamesDatabase.unshift(newGameObj);
+      renderGames();
+
+      closePublishModal();
+      navigateTo('home');
+      showToast(`🎉 تم نشر لعبتك "${title}" بنجاح في الصفحة الرئيسية!`);
+    }
+
+    let miniGameAnimId = null;
+    let miniPlayerPos = { x: 0, y: 0, z: 0, isJumping: false, jumpVel: 0 };
+    let miniThree = { scene: null, camera: null, renderer: null, playerGroup: null, obstacles: [], coins: [] };
+
+    function openGameModal(game) {
+      audioSynth.playClick();
+      appState.activeGame = game;
+
+      document.getElementById('modalGameTitle').textContent = game.title;
+      document.getElementById('modalGameCreator').textContent = `By ${game.creator}`;
+      document.getElementById('modalGameRating').textContent = game.rating;
+      document.getElementById('modalGamePlayers').textContent = `${game.players} Active`;
+      document.getElementById('modalGameDesc').textContent = game.desc;
+
+      document.getElementById('gamePlayOverlay').classList.remove('hidden');
+      document.getElementById('inGameHUD').classList.add('hidden');
+      document.getElementById('touchGameControls').classList.add('hidden');
+      document.getElementById('gameDetailModal').classList.remove('hidden');
+
+      initMiniGamePreview(game);
+    }
+
+    function closeGameModal() {
+      audioSynth.playClick();
+      stopPlayableGame();
+      document.getElementById('gameDetailModal').classList.add('hidden');
+    }
+
+    function initMiniGamePreview(game) {
+      const canvas = document.getElementById('miniGameCanvas');
+      const width = canvas.parentElement.clientWidth || 700;
+      const height = canvas.parentElement.clientHeight || 280;
+
+      if (miniThree.renderer) {
+        miniThree.renderer.dispose();
+      }
+
+      miniThree.scene = new THREE.Scene();
+      miniThree.scene.background = new THREE.Color(game.bgColor);
+
+      miniThree.camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+      miniThree.camera.position.set(0, 4, 8);
+      miniThree.camera.lookAt(0, 1, 0);
+
+      miniThree.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      miniThree.renderer.setSize(width, height);
+
+      const amb = new THREE.AmbientLight(0xffffff, 0.7);
+      miniThree.scene.add(amb);
+      const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+      dir.position.set(5, 10, 7);
+      miniThree.scene.add(dir);
+
+      // Runway Track
+      const trackGeo = new THREE.BoxGeometry(6, 0.4, 40);
+      const trackMat = new THREE.MeshLambertMaterial({ color: 0x1f2937 });
+      const track = new THREE.Mesh(trackGeo, trackMat);
+      track.position.set(0, -0.2, 0);
+      miniThree.scene.add(track);
+
+      // Roblox Blocky Player
+      const player = new THREE.Group();
+      
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.4, 0.6), new THREE.MeshLambertMaterial({ color: 0x00a2ff }));
+      torso.position.y = 1.3;
+      player.add(torso);
+
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), new THREE.MeshLambertMaterial({ color: 0xfed7aa }));
+      head.position.y = 2.4;
+      player.add(head);
+
+      miniThree.scene.add(player);
+      miniThree.playerGroup = player;
+      miniPlayerPos.x = 0;
+      miniPlayerPos.y = 0;
+
+      function renderLoop() {
+        miniGameAnimId = requestAnimationFrame(renderLoop);
+        if (appState.isPlayingGame) {
+          // Physics: Jumping
+          if (miniPlayerPos.isJumping) {
+            miniPlayerPos.y += miniPlayerPos.jumpVel;
+            miniPlayerPos.jumpVel -= 0.02;
+            if (miniPlayerPos.y <= 0) {
+              miniPlayerPos.y = 0;
+              miniPlayerPos.isJumping = false;
+            }
+          }
+          player.position.x = miniPlayerPos.x;
+          player.position.y = miniPlayerPos.y;
+        } else {
+          player.rotation.y += 0.015;
+        }
+        miniThree.renderer.render(miniThree.scene, miniThree.camera);
+      }
+      cancelAnimationFrame(miniGameAnimId);
+      renderLoop();
+    }
+
+    function launchPlayableGame() {
+      audioSynth.playClick();
+      document.getElementById('gamePlayOverlay').classList.add('hidden');
+      document.getElementById('inGameHUD').classList.remove('hidden');
+      document.getElementById('touchGameControls').classList.remove('hidden');
+      appState.isPlayingGame = true;
+      document.getElementById('gameScoreDisplay').textContent = "100";
+      showToast(`🎮 دخلت الآن في ${appState.activeGame.title}! استخدم الأسهم أو الأزرار للحركة والقفز`);
+    }
+
+    function stopPlayableGame() {
+      appState.isPlayingGame = false;
+      document.getElementById('gamePlayOverlay').classList.remove('hidden');
+      document.getElementById('inGameHUD').classList.add('hidden');
+      document.getElementById('touchGameControls').classList.add('hidden');
+    }
+
+    function movePlayerLeft() {
+      audioSynth.playClick();
+      miniPlayerPos.x = Math.max(-2.2, miniPlayerPos.x - 0.5);
+    }
+
+    function movePlayerRight() {
+      audioSynth.playClick();
+      miniPlayerPos.x = Math.min(2.2, miniPlayerPos.x + 0.5);
+    }
+
+    function makePlayerJump() {
+      if (!miniPlayerPos.isJumping) {
+        audioSynth.playClick();
+        miniPlayerPos.isJumping = true;
+        miniPlayerPos.jumpVel = 0.35;
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (!appState.isPlayingGame) return;
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+        movePlayerLeft();
+      } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+        movePlayerRight();
+      } else if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+        makePlayerJump();
+      }
+    });
+
+    function renderShopItems() {
+      const grid = document.getElementById('shopItemsGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const query = appState.shopSearchQuery.toLowerCase().trim();
+      const filtered = robloxShopDatabase.filter(item => {
+        const matchesCategory = (appState.shopFilter === 'all') || (item.category === appState.shopFilter);
+        const matchesSearch = item.title.toLowerCase().includes(query) || item.creator.toLowerCase().includes(query);
+        return matchesCategory && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-12 text-center text-slate-400">
+            <span class="text-4xl block mb-2">🔍</span>
+            <p class="font-bold text-sm">لم يتم العثور على عناصر مطابقة للبحث!</p>
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach(item => {
+        const isOwned = appState.currentUser.inventory.includes(item.id);
+        const card = document.createElement('div');
+        card.className = "group bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm hover:shadow-md transition flex flex-col cursor-pointer";
+        card.onclick = () => openShopItemModal(item);
+
+        card.innerHTML = `
+          <div class="w-full aspect-square rounded-xl flex items-center justify-center text-5xl relative overflow-hidden transition group-hover:scale-105 duration-200" style="background: ${item.bgColor}">
+            <span>${item.icon}</span>
+            ${item.category === 'limited' ? '<span class="absolute top-1.5 left-1.5 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">LIMITED</span>' : ''}
+            ${isOwned ? '<span class="absolute top-1.5 right-1.5 bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow">OWNED</span>' : ''}
+          </div>
+          <div class="mt-2.5 flex-1 flex flex-col justify-between">
+            <div>
+              <h4 class="font-bold text-xs text-slate-800 truncate" title="${item.title}">${item.title}</h4>
+              <p class="text-[10px] text-slate-400 font-medium truncate">${item.creator}</p>
+            </div>
+            <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
+              <div class="flex items-center gap-1 font-extrabold text-xs text-slate-900">
+                <svg class="w-3.5 h-3.5 text-emerald-600" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 21 8.5 21 15.5 12 22 3 15.5 3 8.5 12 2"/><circle cx="12" cy="12" r="2.5" fill="white"/></svg>
+                <span>${item.price}</span>
+              </div>
+              <span class="text-[10px] font-bold ${isOwned ? 'text-slate-400' : 'text-sky-600 group-hover:underline'}">
+                ${isOwned ? 'تم الشراء' : 'شراء'}
+              </span>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function filterShopCategory(category, btnElement) {
+      audioSynth.playClick();
+      appState.shopFilter = category;
+
+      document.querySelectorAll('.shop-filter-btn').forEach(btn => {
+        btn.classList.remove('bg-slate-900', 'text-white');
+        btn.classList.add('bg-white', 'text-slate-700', 'border', 'border-slate-200');
+      });
+      if (btnElement) {
+        btnElement.classList.remove('bg-white', 'text-slate-700', 'border', 'border-slate-200');
+        btnElement.classList.add('bg-slate-900', 'text-white');
+      }
+
+      renderShopItems();
+    }
+
+    function handleShopSearch(val) {
+      appState.shopSearchQuery = val;
+      renderShopItems();
+    }
+
+    function openShopItemModal(item) {
+      audioSynth.playClick();
+      appState.activeShopItem = item;
+
+      const isOwned = appState.currentUser.inventory.includes(item.id);
+      const remaining = appState.currentUser.robux - item.price;
+
+      document.getElementById('modalItemPreview').textContent = item.icon;
+      document.getElementById('modalItemPreview').style.backgroundColor = item.bgColor;
+      document.getElementById('modalItemCategory').textContent = item.category.toUpperCase();
+      document.getElementById('modalItemTitle').textContent = item.title;
+      document.getElementById('modalItemCreator').textContent = `By ${item.creator}`;
+      document.getElementById('modalItemDesc').textContent = item.desc;
+      document.getElementById('modalItemPrice').textContent = item.price.toLocaleString();
+
+      const remElem = document.getElementById('modalRemainingBalance');
+      const buyBtn = document.getElementById('modalBuyConfirmBtn');
+
+      if (isOwned) {
+        remElem.textContent = "العنصر بحوزتك بالفعل";
+        remElem.className = "text-sky-600 font-bold";
+        buyBtn.textContent = "ارتداء الآن على الشخصية";
+        buyBtn.className = "flex-[2] py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-extrabold text-xs transition shadow-lg";
+      } else if (remaining < 0) {
+        remElem.textContent = `ينقصك ${Math.abs(remaining).toLocaleString()} Robux`;
+        remElem.className = "text-rose-500 font-bold";
+        buyBtn.textContent = "روبوكس غير كافٍ (اشحن الآن)";
+        buyBtn.className = "flex-[2] py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs transition shadow-lg";
+      } else {
+        remElem.textContent = `${remaining.toLocaleString()} Robux`;
+        remElem.className = "text-emerald-600 font-black";
+        buyBtn.textContent = `شراء الآن (${item.price} R$)`;
+        buyBtn.className = "flex-[2] py-3 rounded-xl bg-[#00a651] hover:bg-[#008f45] text-white font-extrabold text-xs transition shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2";
+      }
+
+      document.getElementById('shopItemModal').classList.remove('hidden');
+    }
+
+    function closeShopItemModal() {
+      audioSynth.playClick();
+      document.getElementById('shopItemModal').classList.add('hidden');
+    }
+
+    function confirmShopPurchase() {
+      const item = appState.activeShopItem;
+      if (!item) return;
+
+      const isOwned = appState.currentUser.inventory.includes(item.id);
+
+      if (isOwned) {
+        equipShopItemToAvatar(item);
+        closeShopItemModal();
+        showToast(`✨ تم ارتداء "${item.title}" على شخصيتك بنجاح!`);
+        return;
+      }
+
+      if (appState.currentUser.robux < item.price) {
+        audioSynth.playOOF();
+        showToast('⚠️ رصيدك لا يكفي! جاري فتح متجر شحن الروبوكس...');
+        closeShopItemModal();
+        openRobuxModal();
+        return;
+      }
+
+      audioSynth.playRobuxCash();
+      appState.currentUser.robux -= item.price;
+      appState.currentUser.inventory.push(item.id);
+      updateRobuxDisplay();
+      equipShopItemToAvatar(item);
+      renderShopItems();
+      closeShopItemModal();
+      showToast(`🎉 مبارك! تم شراء "${item.title}" وخصم ${item.price} روبوكس بنجاح!`);
+    }
+
+    function equipShopItemToAvatar(item) {
+      if (item.type === 'hat' || item.type === 'accessory') {
+        appState.currentUser.avatar.hat = item.icon;
+        const hatEl = document.getElementById('avatarHatAccessory');
+        if (hatEl) hatEl.textContent = item.icon;
+      } else if (item.type === 'face') {
+        appState.currentUser.avatar.face = item.icon;
+        const faceEl = document.getElementById('avatarFaceEmoji');
+        if (faceEl) faceEl.textContent = item.icon;
+      } else if (item.type === 'shirt' && item.shirtColor) {
+        appState.currentUser.avatar.torso = item.shirtColor;
+        const torsoEl = document.getElementById('avatarTorso');
+        if (torsoEl) torsoEl.style.backgroundColor = item.shirtColor;
+      }
+    }
+
+    function setAvatarPartColor(part, color) {
+      audioSynth.playClick();
+      if (part === 'skin') {
+        appState.currentUser.avatar.skin = color;
+        document.getElementById('avatarHead').style.backgroundColor = color;
+      } else if (part === 'torso') {
+        appState.currentUser.avatar.torso = color;
+        document.getElementById('avatarTorso').style.backgroundColor = color;
+      }
+    }
+
+    function setAvatarHat(hatEmoji) {
+      audioSynth.playClick();
+      appState.currentUser.avatar.hat = hatEmoji;
+      document.getElementById('avatarHatAccessory').textContent = hatEmoji;
+    }
+
+    function saveAvatarSettings() {
+      audioSynth.playRobuxCash();
+      showToast('✨ تم حفظ مظهر شخصيتك بنجاح!');
+      navigateTo('home');
+    }
+
+    function showToast(message) {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      toast.className = "bg-slate-900/90 text-white px-4 py-2.5 rounded-2xl shadow-xl border border-slate-700 text-xs font-bold flex items-center gap-2 transform translate-y-3 opacity-0 transition-all duration-300 pointer-events-auto";
+      toast.innerHTML = `
+        <span class="text-sky-400">●</span>
+        <span>${message}</span>
+      `;
+
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.remove('translate-y-3', 'opacity-0');
+      }, 10);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function initCharts() {
+      const chartsContainer = document.getElementById('chartsRankList');
+      if (!chartsContainer) return;
+      chartsContainer.innerHTML = '';
+
+      robloxGamesDatabase.slice(0, 10).forEach((game, index) => {
+        const item = document.createElement('div');
+        item.className = "flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-200/80 shadow-sm cursor-pointer hover:bg-slate-50 transition";
+        item.onclick = () => openGameModal(game);
+
+        item.innerHTML = `
+          <div class="font-black text-lg text-slate-400 w-6 text-center">#${index + 1}</div>
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl text-white shadow-inner" style="background: ${game.bgColor}">
+            ${game.iconEmoji}
+          </div>
+          <div class="flex-1 min-w-0">
+            <h4 class="font-bold text-sm text-slate-800 truncate">${game.title}</h4>
+            <p class="text-xs text-slate-500">${game.players} يلعبون الآن • ${game.rating} تقييم</p>
+          </div>
+          <button class="px-3 py-1.5 bg-[#00a651] text-white rounded-xl text-xs font-bold">Play</button>
+        `;
+        chartsContainer.appendChild(item);
+      });
+    }
+
+    // App Initialization on Page Load
+    window.addEventListener('DOMContentLoaded', () => {
+      renderGames();
+      initCharts();
+      renderShopItems();
+      updateRobuxDisplay();
+    });
+  </script>
+</body>
+</html>
